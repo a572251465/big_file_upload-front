@@ -20,7 +20,7 @@ export class PLimit {
   // 表示等待的任务
   private waitTasks: Array<[string, FiringTaskType]> = [];
 
-  constructor(maxConcurrentRequests: number, successCallback: SuccessFnType) {
+  private constructor(maxConcurrentRequests: number, successCallback: SuccessFnType) {
     this.maxConcurrentRequests = maxConcurrentRequests || 5;
     this.successCallback = successCallback;
   }
