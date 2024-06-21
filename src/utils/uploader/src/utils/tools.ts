@@ -1,15 +1,15 @@
 import {isEmpty, isHas} from "jsmethod-extra";
-import {CurrentType, QueueElementBase, UploadProgressState} from "../types";
+import {
+    CurrentType,
+    QueueElementBase,
+    UploadProgressState
+} from "../types";
 import {emitterAndTaker} from "@/utils/uploader/src/utils/emitterAndTaker.ts";
 import {UPLOADING_FILE_SUBSCRIBE_DEFINE} from "@/utils/uploader";
 
 // 表示 计算名称的 work
 export const calculateNameWorker: CurrentType<null | Worker> = {
     current: null,
-};
-// 表示二级目录
-export const publicPath: CurrentType<string> = {
-    current: "",
 };
 // 判断某个文件是否上传中
 export const uploadFileStateMapping = new Map<string, boolean>();
@@ -26,20 +26,19 @@ export function removeFileStateMappingHandler(key: string) {
     uploadFileStateMapping.delete(key);
 }
 
-
 /**
  * 设置 全局的信息
  *
  * @author lihh
  * @param args 传递的参数。如果只有一个参数的话，就是删除，三个参数，设置为添加
  */
-export function putGlobalInfoMappingHandler(...args: Array<string>) {
+export function putGlobalInfoMappingHandler(...args: Array<unknown>) {
     if (isEmpty(args)) return;
 
     if (args.length == 1)
-        Reflect.deleteProperty(globalInfoMapping, args[0])
+        Reflect.deleteProperty(globalInfoMapping, args[0] as string)
     else {
-        const params = args.slice(1), code = args[0];
+        const params = args.slice(1), code = args[0] as string;
         if (params.length % 2 !== 0)
             throw new Error("global info mapping params error");
         for (let i = 0; i < params.length; i += 1) {
@@ -67,13 +66,13 @@ export function putGlobalInfoMappingHandler(...args: Array<string>) {
 export const calculateChunkSize = (c: number) => c * 1024 * 1024;
 
 /**
- * 提交 上传进度状态
+ * 生成 基础的进度状态
  *
  * @author lihh
  * @param type 进度类型
- * @param code 表示唯一的值
+ * @param code 唯一的code
  */
-export function emitUploadProgressState(type: UploadProgressState, code: string) {
+export function generateBaseProgressState(type: UploadProgressState, code: string) {
     const map = globalInfoMapping[code];
 
     // 表示 基础queue元素
@@ -84,10 +83,36 @@ export function emitUploadProgressState(type: UploadProgressState, code: string)
         blockMark: map.get("blockMark")!,
         progress: 0,
         step: 0,
-        total: 0
+        totalSize: map.get("totalSize") as any as number,
     };
 
-    emitterAndTaker.emit(UPLOADING_FILE_SUBSCRIBE_DEFINE, baseQueueElement);
+    return baseQueueElement;
+}
+
+/**
+ * 提交 上传进度状态
+ *
+ * @author lihh
+ * @param type 进度类型
+ * @param code 表示唯一的值
+ */
+export function emitUploadProgressState(type: UploadProgressState, code: string) {
+    emitterAndTaker.emit(UPLOADING_FILE_SUBSCRIBE_DEFINE, generateBaseProgressState(type, code));
+}
+
+/**
+ * 提交 上传的的进度状态
+ *
+ * @author lihh
+ * @param type 类型
+ * @param code 唯一的code
+ * @param step 步长
+ */
+export function emitUploadingProgressState(type: UploadProgressState, code: string, step: number) {
+    const baseProgressState = generateBaseProgressState(type, code);
+    baseProgressState.step = step;
+
+    emitterAndTaker.emit(UPLOADING_FILE_SUBSCRIBE_DEFINE, baseProgressState);
 }
 
 /**

@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import {defineConfig} from "vite";
 import vue from "@vitejs/plugin-vue";
 import path from "path";
 
@@ -7,21 +7,21 @@ const port = 9222;
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [vue()],
-  resolve: {
-    alias: {
-      "@": pathResolve("src"),
+    plugins: [vue()],
+    resolve: {
+        alias: {
+            "@": pathResolve("src"),
+        },
+        extensions: [".vue", ".ts", ".tsx", ".js"],
     },
-    extensions: [".vue", ".ts", ".tsx", ".js"],
-  },
-  server: {
-    port,
-    proxy: {
-      "^/api": {
-        target: "",
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ""),
-      },
+    server: {
+        port,
+        proxy: {
+            "^/api": {
+                target: "http://localhost:9333",
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/api/, ""),
+            },
+        },
     },
-  },
 });

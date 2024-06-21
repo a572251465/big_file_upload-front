@@ -1,5 +1,6 @@
 import {CHUNK_SIZE_100, CHUNK_SIZE_30} from "./define";
 import {calculateChunkSize} from "./tools";
+import {ChunkFileType} from "../types";
 
 /**
  * 创建 file chunks 切割
@@ -9,18 +10,20 @@ import {calculateChunkSize} from "./tools";
  * @param fileName file 对应的 hash值
  */
 export function createFileChunks(file: File, fileName: string) {
-  // 表示 chunks
-  const chunks: Array<{ chunk: Blob; chunkFileName: string }> = [];
+    // 表示 chunks
+    const chunks: Array<ChunkFileType> = [];
 
-  // 分割文件个数 以及每次切割大小
-  const [chunkCount, CHUNK_SIZE] = calculateChunkCount(file.size);
-  for (let i = 0; i < chunkCount; i++) {
-    let chunk = file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-    chunks.push({
-      chunk,
-      chunkFileName: `${fileName}-${i}`,
-    });
-  }
+    // 分割文件个数 以及每次切割大小
+    const [chunkCount, CHUNK_SIZE] = calculateChunkCount(file.size);
+    for (let i = 0; i < chunkCount; i++) {
+        let chunk = file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+        chunks.push({
+            chunk,
+            chunkFileName: `${fileName}-${i}`,
+        });
+    }
+
+    return chunks;
 }
 
 /**
@@ -30,15 +33,15 @@ export function createFileChunks(file: File, fileName: string) {
  * @param fileSize 表示文件大小
  */
 export function calculateChunkCount(fileSize: number): [number, number] {
-  let CHUNK_SIZE = 0;
+    let CHUNK_SIZE = 0;
 
-  if (fileSize <= CHUNK_SIZE_30) {
-    CHUNK_SIZE = calculateChunkSize(2);
-  } else if (fileSize > CHUNK_SIZE_30 && fileSize <= CHUNK_SIZE_100) {
-    CHUNK_SIZE = calculateChunkSize(6);
-  } else {
-    CHUNK_SIZE = calculateChunkSize(10);
-  }
+    if (fileSize <= CHUNK_SIZE_30) {
+        CHUNK_SIZE = calculateChunkSize(2);
+    } else if (fileSize > CHUNK_SIZE_30 && fileSize <= CHUNK_SIZE_100) {
+        CHUNK_SIZE = calculateChunkSize(6);
+    } else {
+        CHUNK_SIZE = calculateChunkSize(10);
+    }
 
-  return [Math.ceil(fileSize / CHUNK_SIZE), CHUNK_SIZE];
+    return [Math.ceil(fileSize / CHUNK_SIZE), CHUNK_SIZE];
 }

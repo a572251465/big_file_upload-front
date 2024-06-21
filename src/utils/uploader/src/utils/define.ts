@@ -8,7 +8,8 @@ export const UploadProgressStateText: Record<
 > = {
     [UploadProgressState.Prepare]: "准备中 ...",
     [UploadProgressState.Waiting]: "排队等待中 ...",
-    [UploadProgressState.Uploading]: "上传中 ...",
+    [UploadProgressState.Uploading]: "切片文件 上传中 ...",
+    [UploadProgressState.Merge]: "文件合并中 ...",
     [UploadProgressState.Done]: "完成",
     [UploadProgressState.OtherUploading]: "相同的文件上传中 ..."
 };

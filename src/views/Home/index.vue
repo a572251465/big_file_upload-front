@@ -61,6 +61,14 @@ emitterAndTaker.on(UPLOADING_FILE_SUBSCRIBE_DEFINE, function (el: Required<Queue
       existingElement!.stateDesc = UploadProgressStateText[existingElement!.type];
       break;
     }
+    case UploadProgressState.Uploading: {
+      existingElement!.type = UploadProgressState.Uploading;
+      existingElement!.stateDesc = UploadProgressStateText[existingElement!.type];
+
+      const progress = existingElement!.progress;
+      existingElement!.progress = progress + el.step;
+      break;
+    }
   }
 })
 

@@ -10,3 +10,4 @@ api.subscribe(REQUEST_ENUM_VALUE.REQUEST_URL, function (url: string) {
 });
 
 export { api };
+export * from "./types";

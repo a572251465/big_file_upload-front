@@ -6,10 +6,18 @@ export enum UploadProgressState {
     Waiting = "Waiting",
     // 上传中
     Uploading = "Uploading",
+    // 表示合并文件中
+    Merge = "Merge",
     // 上传完成
     Done = "Done",
     // 表示 其他元素上传中
     OtherUploading = "OtherUploading"
+}
+
+/* 分割文件类型 */
+export interface ChunkFileType {
+    chunk: Blob;
+    chunkFileName: string
 }
 
 /* 队列元素 */
@@ -21,7 +29,7 @@ export type QueueElementBase = Partial<{
     // 表示 步长
     step: number;
     // 表示 总步长, 文件切割多少份
-    total: number;
+    totalSize: number;
     // 表示 进度
     progress: number;
     // 表示 块 标记
