@@ -13,7 +13,11 @@ export const UploadProgressStateText: Record<
     [UploadProgressState.Done]: "完成",
     [UploadProgressState.QuickUpload]: "秒传成功",
     [UploadProgressState.BreakPointUpload]: "断点续传 准备中 ...",
-    [UploadProgressState.OtherUploading]: "相同的文件上传中 ..."
+    [UploadProgressState.OtherUploading]: "相同的文件上传中 ...",
+    [UploadProgressState.Canceled]: "上传被取消",
+    [UploadProgressState.Pause]: "上传已暂停",
+    [UploadProgressState.Retry]: "上传失败, 重试中(%s) ...",
+    [UploadProgressState.RetryFailed]: "重试失败, 上传被取消"
 };
 
 /* 计算 chunk size 大小，这是一个预估值 */

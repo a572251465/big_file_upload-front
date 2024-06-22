@@ -39,7 +39,7 @@ import {
   UploadProgressStateText
 } from "@/utils/uploader";
 import {ref} from "vue";
-import {equals, isNotEmpty} from "jsmethod-extra";
+import {equals, isNotEmpty, strFormat} from "jsmethod-extra";
 
 // 添加订阅
 emitterAndTaker.on(UPLOADING_FILE_SUBSCRIBE_DEFINE, function (el: Required<QueueElementBase & {
@@ -71,6 +71,11 @@ emitterAndTaker.on(UPLOADING_FILE_SUBSCRIBE_DEFINE, function (el: Required<Queue
     case UploadProgressState.BreakPointUpload: {
       // 断点续传中 直接设置滚动状态
       existingElement!.progress = el.step;
+      break;
+    }
+      // 判断是否重试中
+    case UploadProgressState.Retry: {
+      existingElement!.stateDesc = strFormat(existingElement!.stateDesc, el.retryTimes + "");
       break;
     }
     case UploadProgressState.Merge:

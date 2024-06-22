@@ -15,7 +15,15 @@ export enum UploadProgressState {
     // 断点 续传
     BreakPointUpload = "BreakPointUpload",
     // 表示 其他元素上传中
-    OtherUploading = "OtherUploading"
+    OtherUploading = "OtherUploading",
+    // 暂停 状态
+    Pause = "Pause",
+    // 被 取消状态
+    Canceled = "Canceled",
+    // 重试状态
+    Retry = "Retry",
+    // 重试失败
+    RetryFailed = "RetryFailed"
 }
 
 /* 分割文件类型 */
@@ -38,6 +46,10 @@ export type QueueElementBase = Partial<{
     progress: number;
     // 文件名称
     fileName: string;
+    // 表示上传的文件
+    uploadFile: File,
+    // 重试次数
+    retryTimes: number;
 }>;
 
 /* 上传文件的 配置文件 */

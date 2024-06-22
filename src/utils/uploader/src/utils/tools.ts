@@ -18,6 +18,10 @@ export const calculateNameWorker: CurrentType<null | Worker> = {
 export const calculateUploaderConfig: CurrentType<UploadConfigType | null> = {
     current: null
 }
+// 表示 上传进度的状态
+export const globalProgressState: CurrentType<Map<string, UploadProgressState>> = {
+    current: new Map<string, UploadProgressState>()
+}
 
 // 判断某个文件是否上传中
 export const uploadFileStateMapping = new Map<string, boolean>();
@@ -96,12 +100,16 @@ export function generateBaseProgressState(type: UploadProgressState, uniqueCode:
     const baseQueueElement: Required<QueueElementBase> = {
         type,
         uniqueCode,
+        uploadFile: map.get("uploadFile") as unknown as File,
         fileName: map.get("fileName")!,
         progress: 0,
         step: 0,
-        fileSize: map.get("fileSize") as any as number,
+        retryTimes: 0,
+        fileSize: map.get("fileSize") as unknown as number,
     };
 
+    // 设置全局的进度状态
+    globalProgressState.current.set(uniqueCode, type);
     return baseQueueElement;
 }
 
@@ -110,10 +118,25 @@ export function generateBaseProgressState(type: UploadProgressState, uniqueCode:
  *
  * @author lihh
  * @param type 进度类型
- * @param code 表示唯一的值
+ * @param uniqueCode 表示唯一的值
  */
-export function emitUploadProgressState(type: UploadProgressState, code: string) {
-    emitterAndTaker.emit(UPLOADING_FILE_SUBSCRIBE_DEFINE, generateBaseProgressState(type, code));
+export function emitUploadProgressState(type: UploadProgressState, uniqueCode: string) {
+    emitterAndTaker.emit(UPLOADING_FILE_SUBSCRIBE_DEFINE, generateBaseProgressState(type, uniqueCode));
+}
+
+/**
+ * 提交 重试状态
+ *
+ * @author lihh
+ * @param uniqueCode 表示 唯一的code
+ * @param retryTimes 重试次数
+ */
+export function emitRetryProgressState(uniqueCode: string, retryTimes: number) {
+    // 基础 进度状态
+    const baseProgressState = generateBaseProgressState(UploadProgressState.Retry, uniqueCode);
+    baseProgressState.retryTimes = retryTimes;
+
+    emitterAndTaker.emit(UPLOADING_FILE_SUBSCRIBE_DEFINE, baseProgressState);
 }
 
 /**
@@ -121,11 +144,11 @@ export function emitUploadProgressState(type: UploadProgressState, code: string)
  *
  * @author lihh
  * @param type 类型
- * @param code 唯一的code
+ * @param uniqueCode 唯一的code
  * @param step 步长
  */
-export function emitUploadingProgressState(type: UploadProgressState, code: string, step: number) {
-    const baseProgressState = generateBaseProgressState(type, code);
+export function emitUploadingProgressState(type: UploadProgressState, uniqueCode: string, step: number) {
+    const baseProgressState = generateBaseProgressState(type, uniqueCode);
     baseProgressState.step = step;
 
     emitterAndTaker.emit(UPLOADING_FILE_SUBSCRIBE_DEFINE, baseProgressState);

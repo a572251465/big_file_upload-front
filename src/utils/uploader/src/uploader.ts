@@ -1,10 +1,12 @@
 import {
     calculateNameWorker,
     calculateUploaderConfig,
+    emitRetryProgressState,
     emitUploadingProgressState,
     emitUploadProgressState,
     generateUniqueCode,
     globalInfoMapping,
+    globalProgressState,
     putGlobalInfoMappingHandler
 } from "./utils/tools";
 import {isNotEmpty, sleep} from "jsmethod-extra";
@@ -18,7 +20,7 @@ import {
 } from "@/api/upload";
 
 // 表示 并发限制
-const pLimit = PLimit.getInstance(3);
+let pLimit: PLimit | null = null;
 // 表示 默认的配置文件
 const uploaderDefaultConfig: UploadConfigType = {
     concurrentLimit: 3,
@@ -30,21 +32,78 @@ const uploaderDefaultConfig: UploadConfigType = {
  *
  * @author lihh
  * @param calculationHashCode web worker 计算的code
+ * @param uniqueCode 表示唯一的code
  * @param step 表示步长
  */
-export async function computedBreakPointProgressHandler(calculationHashCode: string, step: number) {
+export async function computedBreakPointProgressHandler(calculationHashCode: string, uniqueCode: string, step: number) {
     // 从这里 判断是否断点续传
-    const res = await listFilesReq(calculationHashCode),
-        length = res.data.length;
+    const res = await listFilesReq(calculationHashCode);
     if (res.success && isNotEmpty(res.data)) {
+        const {length} = res.data;
         // 断点续传状态
-        emitUploadingProgressState(UploadProgressState.BreakPointUpload, calculationHashCode, step * length);
+        emitUploadingProgressState(UploadProgressState.BreakPointUpload, uniqueCode, step * length);
         // 断点续传，设置等待状态
         await sleep(1000);
 
         return length;
     }
     return 0;
+}
+
+/**
+ * 是否可以 继续执行
+ *
+ * @author lihh
+ * @param uniqueCode 唯一的code
+ */
+const isCanNextExecute = (uniqueCode: string) => [UploadProgressState.Waiting, UploadProgressState.Uploading, UploadProgressState.Retry].includes(globalProgressState.current.get(uniqueCode)!)
+
+/**
+ * 分割文件 上传事件
+ *
+ * @author lihh
+ * @param idx 开始索引
+ * @param uniqueCode 唯一的code
+ * @param calculationHashCode web worker 计算的hashCode
+ * @param chunks 分割的文件
+ * @param retryTimes 重试次数
+ */
+export async function splitFileUploadingHandler(idx: number, uniqueCode: string, calculationHashCode: string, chunks: Array<ChunkFileType>, retryTimes = 0) {
+    // 步长, 保留一个小数点
+    const step = +(100 / chunks.length).toFixed(1);
+
+    // 如果循环执行结束后，说明分片文件上传结束。
+    for (; idx < chunks.length && isCanNextExecute(uniqueCode);) {
+        const {chunk, chunkFileName} = chunks[idx];
+
+        // 表示 formData 参数
+        const formData = new FormData();
+        formData.append("file", chunk);
+        const res = await sectionUploadReq(calculationHashCode, chunkFileName, formData);
+
+        // 判断是否写入成功
+        if (res.success) {
+            // 修改 上传中的状态
+            emitUploadingProgressState(UploadProgressState.Uploading, uniqueCode, step);
+            idx += 1;
+        } else {
+            // 判断 是否重试失败
+            const {maxRetryTimes} = calculateUploaderConfig.current!;
+            if (retryTimes >= maxRetryTimes) {
+                // 设置 重试失败 状态
+                emitUploadProgressState(UploadProgressState.RetryFailed, uniqueCode);
+                idx = chunks.length;
+                return
+            }
+
+            // 表示 重试次数
+            retryTimes += 1;
+            // 修改为重试状态
+            emitRetryProgressState(uniqueCode, retryTimes);
+            // 一旦执行到这里，说明上传失败了。尝试重新上传
+            await splitFileUploadingHandler(idx, uniqueCode, calculationHashCode, chunks, retryTimes);
+        }
+    }
 }
 
 /**
@@ -59,24 +118,14 @@ export async function generateTask(calculationHashCode: string, uniqueCode: stri
     // 步长, 保留一个小数点
     const step = +(100 / chunks.length).toFixed(1);
 
-    // 如果循环执行结束后，说明分片文件上传结束。
-    for (let idx = await computedBreakPointProgressHandler(calculationHashCode, step); idx < chunks.length; idx += 1) {
-        const {chunk, chunkFileName} = chunks[idx];
+    // 判断 是否断点续传
+    const idx = await computedBreakPointProgressHandler(calculationHashCode, uniqueCode, step);
+    // 开始分片上传
+    await splitFileUploadingHandler(idx, uniqueCode, calculationHashCode, chunks);
 
-        // 表示 formData 参数
-        const formData = new FormData();
-        formData.append("file", chunk);
-        const res = await sectionUploadReq(calculationHashCode, chunkFileName, formData);
-
-        // 判断是否写入成功
-        if (res.success) {
-            // 修改 上传中的状态
-            emitUploadingProgressState(UploadProgressState.Uploading, uniqueCode, step);
-        } else {
-
-            // 一旦执行到这里，说明上传失败了。尝试重新上传
-        }
-    }
+    // 如果是异常的状态，就没必要往下走了
+    if ([UploadProgressState.RetryFailed].includes(globalProgressState.current.get(uniqueCode)!))
+        return;
 
     // 修改状态 为 合并状态
     emitUploadProgressState(UploadProgressState.Merge, uniqueCode);
@@ -112,8 +161,13 @@ export async function startUploadFileHandler(file: File, calculationHashName: st
     // 开始生成任务
     const task = generateTask.bind(null, calculationHashCode, uniqueCode, fileChunks);
 
+    // 是否设置默认配置
+    if (!calculateUploaderConfig.current)
+        uploadHandler.config(uploaderDefaultConfig);
     // 添加并且发射任务, 每次添加一个文件，就会发射文件
-    pLimit.firingTask(task);
+    if (!pLimit)
+        pLimit = PLimit.getInstance(calculateUploaderConfig.current!.concurrentLimit)
+    pLimit!.firingTask(task);
 }
 
 /**
@@ -134,7 +188,7 @@ export function uploadHandler(
         // 表示文件后缀
         const extName = fileName.split(".").shift()!;
         // 将属性设置为全局属性，方便获取
-        putGlobalInfoMappingHandler(uniqueCode, "fileName", fileName, "uniqueCode", uniqueCode, "fontSize", fontSize, "extName", extName);
+        putGlobalInfoMappingHandler(uniqueCode, "fileName", fileName, "uniqueCode", uniqueCode, "fontSize", fontSize, "extName", extName, "uploadFile", uploadFile);
         // 修改状态
         emitUploadProgressState(UploadProgressState.Prepare, uniqueCode);
 
