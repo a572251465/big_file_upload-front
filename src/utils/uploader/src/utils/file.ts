@@ -38,9 +38,9 @@ export function calculateChunkCount(fileSize: number): [number, number] {
     if (fileSize <= CHUNK_SIZE_30) {
         CHUNK_SIZE = calculateChunkSize(2);
     } else if (fileSize > CHUNK_SIZE_30 && fileSize <= CHUNK_SIZE_100) {
-        CHUNK_SIZE = calculateChunkSize(6);
+        CHUNK_SIZE = calculateChunkSize(4);
     } else {
-        CHUNK_SIZE = calculateChunkSize(10);
+        CHUNK_SIZE = calculateChunkSize(8);
     }
 
     return [Math.ceil(fileSize / CHUNK_SIZE), CHUNK_SIZE];

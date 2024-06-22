@@ -47,6 +47,11 @@ emitterAndTaker.on(UPLOADING_FILE_SUBSCRIBE_DEFINE, function (el: Required<Queue
 }>) {
   // 判断是否存在
   const existingElement = allProgress.value.find(item => equals(item.code, el.code));
+  // 判断 元素是否存在
+  if (existingElement) {
+    existingElement.type = el.type;
+    existingElement.stateDesc = UploadProgressStateText[existingElement!.type];
+  }
 
   switch (el.type) {
     case UploadProgressState.Prepare: {
@@ -56,17 +61,16 @@ emitterAndTaker.on(UPLOADING_FILE_SUBSCRIBE_DEFINE, function (el: Required<Queue
       allProgress.value.push(el);
       break;
     }
-    case UploadProgressState.Waiting: {
-      existingElement!.type = UploadProgressState.Waiting;
-      existingElement!.stateDesc = UploadProgressStateText[existingElement!.type];
+    case UploadProgressState.Uploading: {
+      // 从 这里进行进度条累加
+      const progress = existingElement!.progress, sum = progress + el.step;
+      existingElement!.progress = sum > 100 ? 100 : sum;
       break;
     }
-    case UploadProgressState.Uploading: {
-      existingElement!.type = UploadProgressState.Uploading;
-      existingElement!.stateDesc = UploadProgressStateText[existingElement!.type];
-
-      const progress = existingElement!.progress;
-      existingElement!.progress = progress + el.step;
+    case UploadProgressState.Merge:
+    case UploadProgressState.QuickUpload:
+    case UploadProgressState.Done: {
+      existingElement!.progress = 100;
       break;
     }
   }

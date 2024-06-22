@@ -4,8 +4,10 @@ import {
     QueueElementBase,
     UploadProgressState
 } from "../types";
-import {emitterAndTaker} from "@/utils/uploader/src/utils/emitterAndTaker.ts";
-import {UPLOADING_FILE_SUBSCRIBE_DEFINE} from "@/utils/uploader";
+import {
+    UPLOADING_FILE_SUBSCRIBE_DEFINE,
+    emitterAndTaker
+} from "@/utils/uploader";
 
 // 表示 计算名称的 work
 export const calculateNameWorker: CurrentType<null | Worker> = {

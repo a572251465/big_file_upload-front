@@ -10,6 +10,8 @@ export enum UploadProgressState {
     Merge = "Merge",
     // 上传完成
     Done = "Done",
+    // 秒传
+    QuickUpload = "QuickUpload",
     // 表示 其他元素上传中
     OtherUploading = "OtherUploading"
 }

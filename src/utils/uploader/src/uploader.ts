@@ -7,7 +7,11 @@ import {
 import {isNotEmpty} from "jsmethod-extra";
 import {ChunkFileType, UploadProgressState} from "./types";
 import {createFileChunks, PLimit} from "@/utils/uploader";
-import {sectionUploadReq} from "@/api/upload";
+import {
+    mergeUploadReq,
+    sectionUploadReq,
+    verifyFileExistReq
+} from "@/api/upload";
 
 // 表示 并发限制
 const pLimit = PLimit.getInstance(3);
@@ -22,8 +26,11 @@ const pLimit = PLimit.getInstance(3);
  */
 export async function generateTask(baseDir: string, code: string, chunks: Array<ChunkFileType>) {
     // 表示 步长
-    const step = (100 / chunks.length) | 0;
+    const step = Math.floor(100 / chunks.length);
+    // 表示文件名称
+    let fileName = "";
 
+    // 如果循环执行结束后，说明分片文件上传结束。
     for (let i = 0; i < chunks.length; i++) {
         const {chunk, chunkFileName} = chunks[i];
 
@@ -31,12 +38,23 @@ export async function generateTask(baseDir: string, code: string, chunks: Array<
         const formData = new FormData();
         formData.append("file", chunk);
         const res = await sectionUploadReq(baseDir, chunkFileName, formData);
+        fileName = chunkFileName.split("-")[0];
+
         // 判断是否写入成功
         if (res.success) {
             // 修改 上传中的状态
             emitUploadingProgressState(UploadProgressState.Uploading, code, step);
         }
     }
+
+    // 修改状态 为 合并状态
+    emitUploadProgressState(UploadProgressState.Merge, code);
+
+    // 开始尝试合并文件
+    const res = await mergeUploadReq(baseDir, fileName);
+    if (res.success)
+        // 表示 合并成功
+        emitUploadProgressState(UploadProgressState.Done, code);
 }
 
 /**
@@ -47,7 +65,14 @@ export async function generateTask(baseDir: string, code: string, chunks: Array<
  * @param hashName 根据文件 生成 hashName
  * @param idenCode 身份凭证 code
  */
-export function startUploadFileHandler(file: File, hashName: string, idenCode: string) {
+export async function startUploadFileHandler(file: File, hashName: string, idenCode: string) {
+    // 进行请求 实现秒传
+    const res = await verifyFileExistReq(hashName);
+    if (res.success) {
+        emitUploadProgressState(UploadProgressState.QuickUpload, idenCode)
+        return;
+    }
+
     // 将 文件分为多份
     const fileChunks = createFileChunks(file, hashName);
     // 开始生成任务
