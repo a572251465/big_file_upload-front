@@ -4,10 +4,11 @@ import {
     emitUploadProgressState,
     putGlobalInfoMappingHandler
 } from "./utils/tools";
-import {isNotEmpty} from "jsmethod-extra";
+import {isNotEmpty, sleep} from "jsmethod-extra";
 import {ChunkFileType, UploadProgressState} from "./types";
 import {createFileChunks, PLimit} from "@/utils/uploader";
 import {
+    listFilesReq,
     mergeUploadReq,
     sectionUploadReq,
     verifyFileExistReq
@@ -28,10 +29,21 @@ export async function generateTask(baseDir: string, code: string, chunks: Array<
     // 表示 步长
     const step = Math.floor(100 / chunks.length);
     // 表示文件名称
-    let fileName = "";
+    let fileName = "", i = 0;
+
+    // 从这里 判断是否断点续传
+    const response = await listFilesReq(baseDir), fileNames = response.data;
+    if (response.success && isNotEmpty(fileNames)) {
+        // 断点续传状态
+        emitUploadingProgressState(UploadProgressState.BreakPointUpload, code, step * fileNames.length);
+        await sleep(2000);
+
+        // 修改索引
+        i = fileNames.length - 1;
+    }
 
     // 如果循环执行结束后，说明分片文件上传结束。
-    for (let i = 0; i < chunks.length; i++) {
+    for (; i < chunks.length; i++) {
         const {chunk, chunkFileName} = chunks[i];
 
         // 表示 formData 参数
@@ -69,6 +81,7 @@ export async function startUploadFileHandler(file: File, hashName: string, idenC
     // 进行请求 实现秒传
     const res = await verifyFileExistReq(hashName);
     if (res.success) {
+        // 从这里 修改 秒传状态
         emitUploadProgressState(UploadProgressState.QuickUpload, idenCode)
         return;
     }

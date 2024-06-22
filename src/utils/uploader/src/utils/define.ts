@@ -12,6 +12,7 @@ export const UploadProgressStateText: Record<
     [UploadProgressState.Merge]: "文件合并中 ...",
     [UploadProgressState.Done]: "完成",
     [UploadProgressState.QuickUpload]: "秒传成功",
+    [UploadProgressState.BreakPointUpload]: "断点续传 准备中 ...",
     [UploadProgressState.OtherUploading]: "相同的文件上传中 ..."
 };
 

@@ -31,3 +31,13 @@ export function mergeUploadReq(baseDir: string, fileName: string) {
 export function verifyFileExistReq(fileName: string) {
     return api.get<ICommonResponse>(`/upload/verify/${fileName}`);
 }
+
+/**
+ * 获取文件列表
+ *
+ * @author lihh
+ * @param baseDir 基础目录
+ */
+export function listFilesReq(baseDir: string) {
+    return api.get<ICommonResponse<Array<string>>>(`/upload/list/${baseDir}`);
+}

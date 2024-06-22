@@ -67,6 +67,12 @@ emitterAndTaker.on(UPLOADING_FILE_SUBSCRIBE_DEFINE, function (el: Required<Queue
       existingElement!.progress = sum > 100 ? 100 : sum;
       break;
     }
+      // 判断是否断点续传
+    case UploadProgressState.BreakPointUpload: {
+      // 断点续传中 直接设置滚动状态
+      existingElement!.progress = el.progress;
+      break;
+    }
     case UploadProgressState.Merge:
     case UploadProgressState.QuickUpload:
     case UploadProgressState.Done: {

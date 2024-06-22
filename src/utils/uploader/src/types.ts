@@ -12,6 +12,8 @@ export enum UploadProgressState {
     Done = "Done",
     // 秒传
     QuickUpload = "QuickUpload",
+    // 断点 续传
+    BreakPointUpload = "BreakPointUpload",
     // 表示 其他元素上传中
     OtherUploading = "OtherUploading"
 }
