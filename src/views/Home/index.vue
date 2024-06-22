@@ -20,8 +20,8 @@
     <a-divider>这是分割线</a-divider>
 
     <ul>
-      <li v-for="item in allProgress" :key="item.code">
-        <h2>{{ item.blockMark }} - {{ item.fileName }}</h2>
+      <li v-for="item in allProgress" :key="item.uniqueCode">
+        <h2>{{ item.fileName }}</h2>
         <h5>{{ item.stateDesc }}</h5>
         <a-progress :percent="item.progress"/>
       </li>
@@ -46,7 +46,7 @@ emitterAndTaker.on(UPLOADING_FILE_SUBSCRIBE_DEFINE, function (el: Required<Queue
   stateDesc: string
 }>) {
   // 判断是否存在
-  const existingElement = allProgress.value.find(item => equals(item.code, el.code));
+  const existingElement = allProgress.value.find(item => equals(item.uniqueCode, el.uniqueCode));
   // 判断 元素是否存在
   if (existingElement) {
     existingElement.type = el.type;
@@ -58,7 +58,7 @@ emitterAndTaker.on(UPLOADING_FILE_SUBSCRIBE_DEFINE, function (el: Required<Queue
       if (isNotEmpty(existingElement))
         return;
 
-      allProgress.value.push(el);
+      allProgress.value.unshift(el);
       break;
     }
     case UploadProgressState.Uploading: {
@@ -70,7 +70,7 @@ emitterAndTaker.on(UPLOADING_FILE_SUBSCRIBE_DEFINE, function (el: Required<Queue
       // 判断是否断点续传
     case UploadProgressState.BreakPointUpload: {
       // 断点续传中 直接设置滚动状态
-      existingElement!.progress = el.progress;
+      existingElement!.progress = el.step;
       break;
     }
     case UploadProgressState.Merge:
@@ -87,7 +87,8 @@ const allProgress = ref<Array<Required<QueueElementBase & {
 }>>>([]);
 
 function beforeUploadHandler(file: File) {
-  uploadHandler(file, {code: "1", blockMark: "测试模块"});
+  // 表示 不同的 code
+  uploadHandler(file);
   return false;
 }
 </script>

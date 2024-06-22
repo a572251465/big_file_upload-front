@@ -2,17 +2,23 @@ import {isEmpty, isHas} from "jsmethod-extra";
 import {
     CurrentType,
     QueueElementBase,
+    UploadConfigType,
     UploadProgressState
 } from "../types";
 import {
-    UPLOADING_FILE_SUBSCRIBE_DEFINE,
-    emitterAndTaker
+    emitterAndTaker,
+    UPLOADING_FILE_SUBSCRIBE_DEFINE
 } from "@/utils/uploader";
 
 // 表示 计算名称的 work
 export const calculateNameWorker: CurrentType<null | Worker> = {
     current: null,
 };
+// 表示 上传文件的配置文件
+export const calculateUploaderConfig: CurrentType<UploadConfigType | null> = {
+    current: null
+}
+
 // 判断某个文件是否上传中
 export const uploadFileStateMapping = new Map<string, boolean>();
 // 表示 全局信息
@@ -68,24 +74,32 @@ export function putGlobalInfoMappingHandler(...args: Array<unknown>) {
 export const calculateChunkSize = (c: number) => c * 1024 * 1024;
 
 /**
+ * 这里是生成唯一的 code
+ *
+ * @author lihh
+ */
+export function generateUniqueCode() {
+    return `${+new Date()}-${((Math.random() * 100000) | 0)}`
+}
+
+/**
  * 生成 基础的进度状态
  *
  * @author lihh
  * @param type 进度类型
- * @param code 唯一的code
+ * @param uniqueCode 表示唯一的 code
  */
-export function generateBaseProgressState(type: UploadProgressState, code: string) {
-    const map = globalInfoMapping[code];
+export function generateBaseProgressState(type: UploadProgressState, uniqueCode: string) {
+    const map = globalInfoMapping[uniqueCode];
 
     // 表示 基础queue元素
     const baseQueueElement: Required<QueueElementBase> = {
         type,
-        code,
+        uniqueCode,
         fileName: map.get("fileName")!,
-        blockMark: map.get("blockMark")!,
         progress: 0,
         step: 0,
-        totalSize: map.get("totalSize") as any as number,
+        fileSize: map.get("fileSize") as any as number,
     };
 
     return baseQueueElement;

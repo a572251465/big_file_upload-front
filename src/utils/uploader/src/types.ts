@@ -26,24 +26,30 @@ export interface ChunkFileType {
 
 /* 队列元素 */
 export type QueueElementBase = Partial<{
-    // 表示 类型
+    // 类型
     type: UploadProgressState;
-    // 表示 唯一标识
-    code: string;
-    // 表示 步长
+    // 唯一标识
+    uniqueCode: string;
+    // 文件大小
+    fileSize: number,
+    // 步长
     step: number;
-    // 表示 总步长, 文件切割多少份
-    totalSize: number;
-    // 表示 进度
+    // 进度
     progress: number;
-    // 表示 块 标记
-    blockMark: string;
-    // 表示 上传文件名称
+    // 文件名称
     fileName: string;
 }>;
 
+/* 上传文件的 配置文件 */
+export type UploadConfigType = {
+    // 最大重试次数
+    maxRetryTimes: number,
+    // 并发限制次数
+    concurrentLimit: number
+}
+
 /* 队列元素 */
-export type QueueElementRequired = Required<Omit<QueueElementBase, "progress" | "total" | "step">>;
+export type QueueElementRequired = Required<Omit<QueueElementBase, "progress" | "step">>;
 
 /* 基础 必输类型 */
 export type QueueElementTypeRequired = Omit<QueueElementBase, "type"> &
