@@ -64,13 +64,6 @@ export type UploadConfigType = {
     concurrentLimit: number
 }
 
-/* 队列元素 */
-export type QueueElementRequired = Required<Omit<QueueElementBase, "progress" | "step">>;
-
-/* 基础 必输类型 */
-export type QueueElementTypeRequired = Omit<QueueElementBase, "type"> &
-    Pick<QueueElementBase, "type">;
-
 /* 表示 current 类型 */
 export interface CurrentType<T = null> {
     current: T;

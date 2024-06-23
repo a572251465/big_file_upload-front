@@ -13,7 +13,7 @@ export const UploadProgressStateText: Record<
     [UploadProgressState.Done]: "完成",
     [UploadProgressState.QuickUpload]: "秒传成功",
     [UploadProgressState.BreakPointUpload]: "断点续传 准备中 ...",
-    [UploadProgressState.OtherUploading]: "相同的文件上传中 ...",
+    [UploadProgressState.OtherUploading]: "上传队列中包含相同的文件, 请稍后 ...",
     [UploadProgressState.Canceled]: "上传被取消",
     [UploadProgressState.Pause]: "上传已暂停",
     [UploadProgressState.Retry]: "上传失败, 重试中(%s) ...",

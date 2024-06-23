@@ -1,6 +1,7 @@
 import {
     calculateNameWorker,
     calculateUploaderConfig,
+    cloneGlobalInfoMappingHandler,
     emitPauseProgressState,
     emitRetryProgressState,
     emitUploadingProgressState,
@@ -13,7 +14,14 @@ import {
     putGlobalInfoMappingHandler,
     sameFileUploadStateMapping,
 } from "./utils/tools";
-import {equals, isNotEmpty, isUndefined, sleep} from "jsmethod-extra";
+import {
+    equals,
+    isArray,
+    isEmpty,
+    isNotEmpty,
+    isUndefined,
+    sleep
+} from "jsmethod-extra";
 import {
     ChunkFileType,
     QueueElementBase,
@@ -61,35 +69,28 @@ emitterAndTaker.on(REVERSE_CONTAINER_ACTION, async function (uniqueCode: string,
         case UploadProgressState.Pause: {
             // 是否已经被暂停了
             const isPaused = globalPauseStateMapping.current.get(uniqueCode);
-            if (!isUndefined(isPaused)) {
-                // 表示暂停后 重新启动
-                const map = globalInfoMapping[uniqueCode],
-                    uploadFile = map.get("uploadFile") as any as File,
-                    calculationHashName = map.get("calculationHashName")!;
-
-                // 修改状态 暂停重试
-                globalProgressState.current.set(uniqueCode, UploadProgressState.PauseRetry);
-                emitUploadProgressState(UploadProgressState.PauseRetry, uniqueCode);
-
-                // 重新开始上传
-                await startUploadFileHandler(uploadFile, calculationHashName, uniqueCode);
-            }
+            if (!isUndefined(isPaused))
+                await restartUploadFileHandler(uniqueCode, UploadProgressState.PauseRetry);
             break;
         }
     }
 });
+
 // 订阅事件【UPLOADING_FILE_SUBSCRIBE_DEFINE】，每个状态改变 都会执行这个方法
-emitterAndTaker.on(UPLOADING_FILE_SUBSCRIBE_DEFINE, function (el: QueueElementBase) {
+emitterAndTaker.on(UPLOADING_FILE_SUBSCRIBE_DEFINE, async function (el: QueueElementBase) {
     // 同时订阅 判断指定的状态
     switch (el.type) {
         case UploadProgressState.RetryFailed:
         case UploadProgressState.Done:
         case UploadProgressState.Canceled:
         case UploadProgressState.QuickUpload:
+            // 某个文件结束的时候，判断是否有相同的文件等待
+            if ([UploadProgressState.Done, UploadProgressState.QuickUpload].includes(el.type))
+                await sameFileNeedProceedHandler(el.uniqueCode!);
+
             progressNormalOrErrorCompletionHandler(el);
             clearCacheStateHandler(el.uniqueCode!);
             break;
-
         // 这里是暂停处理
         case UploadProgressState.Pause:
             // 设置暂停状态
@@ -97,6 +98,49 @@ emitterAndTaker.on(UPLOADING_FILE_SUBSCRIBE_DEFINE, function (el: QueueElementBa
                 globalPauseStateMapping.current.set(el.uniqueCode!, el.pauseIndex!);
     }
 })
+
+/**
+ * 重新 上传文件
+ *
+ * @author lihh
+ * @param uniqueCode 文件 唯一的code
+ * @param newType 要修改的状态
+ */
+async function restartUploadFileHandler(uniqueCode: string, newType: UploadProgressState) {
+    // 表示暂停后 重新启动
+    const map = globalInfoMapping[uniqueCode],
+        uploadFile = map.get("uploadFile") as any as File,
+        calculationHashName = map.get("calculationHashName")!;
+
+    // 修改状态
+    globalProgressState.current.set(uniqueCode, newType);
+    emitUploadProgressState(newType, uniqueCode);
+
+    // 重新开始上传
+    await startUploadFileHandler(uploadFile, calculationHashName, uniqueCode);
+}
+
+/**
+ * 相同文件 是否继续下载
+ *
+ * @author lihh
+ * @param uniqueCode 文件 唯一的code
+ */
+async function sameFileNeedProceedHandler(uniqueCode: string) {
+    // 通过唯一的code 拿到map 集合
+    const map = globalInfoMapping[uniqueCode!],
+        calculationHashName = map.get("calculationHashName")!;
+
+    // 从 map集合中 拿到除了【uniqueCode】 的其他code
+    const uniqueCodeValues = sameFileUploadStateMapping.current.get(calculationHashName);
+    if (isEmpty(uniqueCodeValues))
+        return;
+
+    // 拿到剩余的 values
+    const newUniqueCodeValues = uniqueCodeValues!.filter(code => !equals(code, uniqueCode));
+    // 等待的状态 批量上传
+    newUniqueCodeValues!.forEach(code => restartUploadFileHandler(code, UploadProgressState.Waiting))
+}
 
 /**
  * 正常 异常结束的事件
@@ -107,15 +151,28 @@ emitterAndTaker.on(UPLOADING_FILE_SUBSCRIBE_DEFINE, function (el: QueueElementBa
 function progressNormalOrErrorCompletionHandler(el: QueueElementBase) {
     const {uniqueCode} = el;
 
-    // 表示将要删除的元素
-    const willDeleteElements: Array<string> = [];
-    for (const [key, value] of sameFileUploadStateMapping.current)
-        if (equals(uniqueCode, value))
-            willDeleteElements.push(key);
+    // 拿到 calculationHashName
+    const calculationHashName = globalInfoMapping[uniqueCode!].get("calculationHashName")!;
+    // 判断 calculationHashName 是否存在
+    if (!sameFileUploadStateMapping.current.has(calculationHashName))
+        return;
 
-    // 删除元素
-    for (const key of willDeleteElements)
-        sameFileUploadStateMapping.current.delete(key);
+    // 判断 calculationHashName 对应的value 是否为空
+    const uniqueCodeValue = sameFileUploadStateMapping.current.get(calculationHashName);
+    if (isEmpty(uniqueCodeValue)) {
+        sameFileUploadStateMapping.current.delete(calculationHashName);
+        return;
+    }
+
+    // 此时的key 是 文件计算的hash值
+    // 此时的value 是 每个文件唯一的 code
+    // 假如 [xxx.mp4, [xxx01, xxx02, xxx03]]
+    const index = uniqueCodeValue!.indexOf(uniqueCode!);
+    if (index !== -1) {
+        uniqueCodeValue?.splice(index, 1);
+        // 循环判断 是否已经彻底删除
+        progressNormalOrErrorCompletionHandler(el)
+    }
 }
 
 /**
@@ -129,7 +186,6 @@ function clearCacheStateHandler(uniqueCode: string) {
     globalProgressState.current.delete(uniqueCode);
     globalDoneCallbackMapping.current.delete(uniqueCode);
     globalPauseStateMapping.current.delete(uniqueCode);
-    sameFileUploadStateMapping.current.delete(uniqueCode);
 }
 
 /**
@@ -311,6 +367,23 @@ export async function startUploadFileHandler(file: File, calculationHashName: st
 }
 
 /**
+ * 相同文件 上传处理
+ *
+ * @author lihh
+ * @param calculationHashName 根据文件计算出 hash值
+ * @param uniqueCode 每个文件对应 code
+ */
+function sameFileUploadingHandler(calculationHashName: string, uniqueCode: string) {
+    let uniqueCodeArr = sameFileUploadStateMapping.current.get(calculationHashName);
+    // 判断 是否为数组
+    if (!isArray(uniqueCodeArr))
+        sameFileUploadStateMapping.current.set(calculationHashName, (uniqueCodeArr = []));
+
+    // 添加到数组中
+    uniqueCodeArr.push(uniqueCode);
+}
+
+/**
  * 异步 web worker 加载动作
  *
  * @author lihh
@@ -330,11 +403,15 @@ function asyncWebWorkerActionHandler(uploadFile: File, uniqueCode: string) {
 
             // 判断 是否相同文件上传中
             if (sameFileUploadStateMapping.current.has(calculationHashName)) {
+                sameFileUploadingHandler(calculationHashName, uniqueCode);
+                // 克隆 mapping 信息
+                cloneGlobalInfoMappingHandler(sameFileUploadStateMapping.current.get(calculationHashName)![0], uniqueCode);
+
                 emitUploadProgressState(UploadProgressState.OtherUploading, uniqueCode);
                 return;
             }
-            // 添加缓存
-            sameFileUploadStateMapping.current.set(calculationHashName, uniqueCode);
+            // 相同文件 处理
+            sameFileUploadingHandler(calculationHashName, uniqueCode);
 
             // 修改状态为 等待状态
             emitUploadProgressState(UploadProgressState.Waiting, uniqueCode);

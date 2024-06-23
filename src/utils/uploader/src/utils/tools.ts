@@ -1,4 +1,4 @@
-import {equals, isEmpty, isHas} from "jsmethod-extra";
+import {isEmpty, isHas} from "jsmethod-extra";
 import {
     CurrentType,
     QueueElementBase,
@@ -29,12 +29,30 @@ export const globalDoneCallbackMapping: CurrentType<Map<string, (error: unknown,
 // 表示 全局信息
 export const globalInfoMapping: Record<string, Map<string, string>> = {};
 // 判断是否有相同的文件上传中
-export const sameFileUploadStateMapping: CurrentType<Map<string, string>> = {
+export const sameFileUploadStateMapping: CurrentType<Map<string, Array<string>>> = {
     current: new Map()
 };
 // 全局的暂停指令
 export const globalPauseStateMapping: CurrentType<Map<string, number>> = {
     current: new Map()
+}
+
+/**
+ * 克隆全局的信息 映射事件
+ *
+ * @author lihh
+ * @param source 来源
+ * @param target 去向
+ */
+export function cloneGlobalInfoMappingHandler(source: string, target: string) {
+    // 拿到 mapping 信息
+    const map = globalInfoMapping[source];
+    if (isEmpty(map))
+        return;
+
+    // 设置 target 的值
+    for (const [key, value] of map)
+        putGlobalInfoMappingHandler(target, key, value);
 }
 
 /**
@@ -95,7 +113,7 @@ export function generateUniqueCode() {
  */
 export function isCanCommitProgressState(uniqueCode: string, currentProgressType: UploadProgressState) {
     return [UploadProgressState.Pause].includes(globalProgressState.current.get(uniqueCode)!)
-        && !equals(currentProgressType, UploadProgressState.Pause);
+        && ![UploadProgressState.Pause, UploadProgressState.Done].includes(currentProgressType);
 }
 
 /**
