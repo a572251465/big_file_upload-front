@@ -18,7 +18,8 @@ export const UploadProgressStateText: Record<
     [UploadProgressState.Pause]: "上传已暂停",
     [UploadProgressState.Retry]: "上传失败, 重试中(%s) ...",
     [UploadProgressState.RetryFailed]: "重试失败, 上传被取消",
-    [UploadProgressState.PauseRetry]: "暂停重试 ..."
+    [UploadProgressState.PauseRetry]: "暂停重试 ...",
+    [UploadProgressState.NetworkDisconnected]: "网络掉线, 重试(%s) ..."
 };
 
 /* 计算 chunk size 大小，这是一个预估值 */

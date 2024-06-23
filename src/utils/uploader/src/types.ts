@@ -24,6 +24,8 @@ export enum UploadProgressState {
     Canceled = "Canceled",
     // 重试状态
     Retry = "Retry",
+    // 网络失联
+    NetworkDisconnected = "NetworkDisconnected",
     // 重试失败
     RetryFailed = "RetryFailed"
 }
@@ -52,6 +54,8 @@ export type QueueElementBase = Partial<{
     uploadFile: File,
     // 重试次数
     retryTimes: number;
+    // 网络掉线 重试次数
+    networkDisconnectedRetryTimes: number;
     // 暂停索引 -1 == 合并中
     pauseIndex: number;
 }>;

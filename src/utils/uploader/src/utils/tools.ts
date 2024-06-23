@@ -100,7 +100,7 @@ export const calculateChunkSize = (c: number) => c * 1024 * 1024;
  * @author lihh
  */
 export function generateUniqueCode() {
-    return `${+new Date()}-${((Math.random() * 100000) | 0)}`
+    return `${+new Date()}-${((Math.random() * 100000) | 0)}-${((Math.random() * 10000000) | 0)}`
 }
 
 /**
@@ -136,6 +136,7 @@ export function generateBaseProgressState(type: UploadProgressState, uniqueCode:
         step: 0,
         retryTimes: 0,
         pauseIndex: 0,
+        networkDisconnectedRetryTimes: 0,
         fileSize: map.get("fileSize") as unknown as number,
     };
 
