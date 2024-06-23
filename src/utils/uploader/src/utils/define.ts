@@ -25,3 +25,5 @@ export const CHUNK_SIZE_30 = calculateChunkSize(30);
 export const CHUNK_SIZE_100 = calculateChunkSize(100);
 /* 上传的文件 订阅状态 */
 export const UPLOADING_FILE_SUBSCRIBE_DEFINE = "UPLOADING_FILE_SUBSCRIBE_DEFINE";
+/* 反制 容器 动作 */
+export const REVERSE_CONTAINER_ACTION = "REVERSE_CONTAINER_ACTION";

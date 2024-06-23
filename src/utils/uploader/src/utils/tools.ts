@@ -22,21 +22,16 @@ export const calculateUploaderConfig: CurrentType<UploadConfigType | null> = {
 export const globalProgressState: CurrentType<Map<string, UploadProgressState>> = {
     current: new Map<string, UploadProgressState>()
 }
-
-// 判断某个文件是否上传中
-export const uploadFileStateMapping = new Map<string, boolean>();
+// 全局的 done callback 映射
+export const globalDoneCallbackMapping: CurrentType<Map<string, (error: unknown, baseDir: string) => void>> = {
+    current: new Map()
+}
 // 表示 全局信息
 export const globalInfoMapping: Record<string, Map<string, string>> = {};
-
-/**
- * 表示 删除 文件状态映射
- *
- * @author lihh
- * @param key 唯一的key
- */
-export function removeFileStateMappingHandler(key: string) {
-    uploadFileStateMapping.delete(key);
-}
+// 判断是否有相同的文件上传中
+export const sameFileUploadStateMapping: CurrentType<Map<string, string>> = {
+    current: new Map()
+};
 
 /**
  * 设置 全局的信息

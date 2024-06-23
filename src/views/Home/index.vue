@@ -24,6 +24,7 @@
         <h2>{{ item.fileName }}</h2>
         <h5>{{ item.stateDesc }}</h5>
         <a-progress :percent="item.progress"/>
+        <close-outlined @click="cancelProgressHandler(item.uniqueCode)"/>
       </li>
     </ul>
   </div>
@@ -33,6 +34,7 @@
 import {
   emitterAndTaker,
   QueueElementBase,
+  REVERSE_CONTAINER_ACTION,
   uploadHandler,
   UPLOADING_FILE_SUBSCRIBE_DEFINE,
   UploadProgressState,
@@ -40,6 +42,7 @@ import {
 } from "@/utils/uploader";
 import {ref} from "vue";
 import {equals, isNotEmpty, strFormat} from "jsmethod-extra";
+import {CloseOutlined} from "@ant-design/icons-vue";
 
 // 添加订阅
 emitterAndTaker.on(UPLOADING_FILE_SUBSCRIBE_DEFINE, function (el: Required<QueueElementBase & {
@@ -47,6 +50,8 @@ emitterAndTaker.on(UPLOADING_FILE_SUBSCRIBE_DEFINE, function (el: Required<Queue
 }>) {
   // 判断是否存在
   const existingElement = allProgress.value.find(item => equals(item.uniqueCode, el.uniqueCode));
+  // 索引
+  const index = allProgress.value.findIndex(item => equals(item.uniqueCode, el.uniqueCode));
   // 判断 元素是否存在
   if (existingElement) {
     existingElement.type = el.type;
@@ -78,6 +83,12 @@ emitterAndTaker.on(UPLOADING_FILE_SUBSCRIBE_DEFINE, function (el: Required<Queue
       existingElement!.stateDesc = strFormat(existingElement!.stateDesc, el.retryTimes + "");
       break;
     }
+      // 表示 这是一个取消状态
+    case UploadProgressState.Canceled: {
+      if (index !== -1)
+        allProgress.value.splice(index, 1);
+      break;
+    }
     case UploadProgressState.Merge:
     case UploadProgressState.QuickUpload:
     case UploadProgressState.Done: {
@@ -93,7 +104,19 @@ const allProgress = ref<Array<Required<QueueElementBase & {
 
 function beforeUploadHandler(file: File) {
   // 表示 不同的 code
-  uploadHandler(file);
+  uploadHandler(file, () => {
+
+  });
   return false;
+}
+
+/**
+ * 表示 取消的事件动作
+ *
+ * @author lihh
+ * @param uniqueCode 取消的唯一 code
+ */
+function cancelProgressHandler(uniqueCode: string) {
+  emitterAndTaker.emit(REVERSE_CONTAINER_ACTION, uniqueCode, UploadProgressState.Canceled);
 }
 </script>
