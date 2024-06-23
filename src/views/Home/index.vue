@@ -21,14 +21,40 @@
 
     <ul>
       <li v-for="item in allProgress" :key="item.uniqueCode">
-        <h2>{{ item.fileName }}</h2>
+        <h3>{{ item.fileName }}</h3>
         <h5>{{ item.stateDesc }}</h5>
-        <a-progress :percent="item.progress"/>
-        <close-outlined @click="cancelProgressHandler(item.uniqueCode)"/>
+        <div class="detail">
+          <a-progress :percent="item.progress"/>
+          <close-outlined @click="cancelProgressHandler(item.uniqueCode)"/>
+          <caret-left-outlined v-if="UploadProgressState.Pause == item.type"/>
+          <pause-outlined @click="pauseHandler(item.uniqueCode)" v-else/>
+        </div>
       </li>
     </ul>
   </div>
 </template>
+
+<style lang="less" scoped>
+ul, li {
+  list-style: none;
+}
+
+ul {
+  width: 60%;
+  margin: 0 auto;
+  border: 1px solid #ccc;
+  padding: 20px;
+  border-radius: 6px;
+  min-height: 200px;
+  max-height: 400px;
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  .detail {
+    display: flex;
+  }
+}
+</style>
 
 <script lang="ts" setup>
 import {
@@ -42,7 +68,21 @@ import {
 } from "@/utils/uploader";
 import {ref} from "vue";
 import {equals, isNotEmpty, strFormat} from "jsmethod-extra";
-import {CloseOutlined} from "@ant-design/icons-vue";
+import {
+  CaretLeftOutlined,
+  CloseOutlined,
+  PauseOutlined
+} from "@ant-design/icons-vue";
+
+/**
+ * 暂停 事件
+ *
+ * @author lihh
+ * @param uniqueCode 表示唯一的 code
+ */
+function pauseHandler(uniqueCode: string) {
+  emitterAndTaker.emit(REVERSE_CONTAINER_ACTION, uniqueCode, UploadProgressState.Pause);
+}
 
 // 添加订阅
 emitterAndTaker.on(UPLOADING_FILE_SUBSCRIBE_DEFINE, function (el: Required<QueueElementBase & {

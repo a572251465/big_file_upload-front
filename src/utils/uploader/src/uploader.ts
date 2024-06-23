@@ -169,7 +169,7 @@ export async function splitFileUploadingHandler(idx: number, uniqueCode: string,
         formData.append("file", chunk);
         const res = await sectionUploadReq(calculationHashCode, chunkFileName, formData);
 
-        await sleep(4000);
+        await sleep(2000);
 
         // 判断是否写入成功
         if (res.success) {
