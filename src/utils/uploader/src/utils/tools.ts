@@ -1,4 +1,4 @@
-import {isEmpty, isHas} from "jsmethod-extra";
+import {equals, isEmpty, isHas} from "jsmethod-extra";
 import {
     CurrentType,
     QueueElementBase,
@@ -86,6 +86,19 @@ export function generateUniqueCode() {
 }
 
 /**
+ * 是否可以 提交进度状态
+ *
+ * @author lihh
+ * @param uniqueCode 进度唯一的 code
+ * @param currentProgressType 当前的状态
+ * @return true 不能继续了/ false 不能继续了
+ */
+export function isCanCommitProgressState(uniqueCode: string, currentProgressType: UploadProgressState) {
+    return [UploadProgressState.Pause].includes(globalProgressState.current.get(uniqueCode)!)
+        && !equals(currentProgressType, UploadProgressState.Pause);
+}
+
+/**
  * 生成 基础的进度状态
  *
  * @author lihh
@@ -121,6 +134,9 @@ export function generateBaseProgressState(type: UploadProgressState, uniqueCode:
  * @param uniqueCode 表示唯一的值
  */
 export function emitUploadProgressState(type: UploadProgressState, uniqueCode: string) {
+    if (isCanCommitProgressState(uniqueCode, type))
+        return;
+
     emitterAndTaker.emit(UPLOADING_FILE_SUBSCRIBE_DEFINE, generateBaseProgressState(type, uniqueCode));
 }
 
@@ -132,6 +148,9 @@ export function emitUploadProgressState(type: UploadProgressState, uniqueCode: s
  * @param retryTimes 重试次数
  */
 export function emitRetryProgressState(uniqueCode: string, retryTimes: number) {
+    if (isCanCommitProgressState(uniqueCode, UploadProgressState.Retry))
+        return;
+
     // 基础 进度状态
     const baseProgressState = generateBaseProgressState(UploadProgressState.Retry, uniqueCode);
     baseProgressState.retryTimes = retryTimes;
@@ -148,6 +167,9 @@ export function emitRetryProgressState(uniqueCode: string, retryTimes: number) {
  * @param step 步长
  */
 export function emitUploadingProgressState(type: UploadProgressState, uniqueCode: string, step: number) {
+    if (isCanCommitProgressState(uniqueCode, type))
+        return;
+
     const baseProgressState = generateBaseProgressState(type, uniqueCode);
     baseProgressState.step = step;
 
@@ -163,6 +185,9 @@ export function emitUploadingProgressState(type: UploadProgressState, uniqueCode
  * @param pauseIndex 索引
  */
 export function emitPauseProgressState(type: UploadProgressState, uniqueCode: string, pauseIndex: number) {
+    if (isCanCommitProgressState(uniqueCode, type))
+        return;
+
     const baseProgressState = generateBaseProgressState(type, uniqueCode);
     baseProgressState.pauseIndex = pauseIndex;
 

@@ -13,7 +13,7 @@ import {
     putGlobalInfoMappingHandler,
     sameFileUploadStateMapping,
 } from "./utils/tools";
-import {equals, isNotEmpty, sleep} from "jsmethod-extra";
+import {equals, isNotEmpty, isUndefined, sleep} from "jsmethod-extra";
 import {
     ChunkFileType,
     QueueElementBase,
@@ -43,7 +43,7 @@ const uploaderDefaultConfig: UploadConfigType = {
 };
 
 // 监听 暂停/ 取消的监听动作
-emitterAndTaker.on(REVERSE_CONTAINER_ACTION, function (uniqueCode: string, action: UploadProgressState) {
+emitterAndTaker.on(REVERSE_CONTAINER_ACTION, async function (uniqueCode: string, action: UploadProgressState) {
     // 判断 动作是否合法
     if (
         ![UploadProgressState.Pause, UploadProgressState.Canceled].includes(action)
@@ -54,16 +54,25 @@ emitterAndTaker.on(REVERSE_CONTAINER_ACTION, function (uniqueCode: string, actio
     // 同时 修改状态
     globalProgressState.current.set(uniqueCode, action);
 
-
     switch (action) {
         case UploadProgressState.Canceled:
             emitUploadProgressState(UploadProgressState.Canceled, uniqueCode);
             break;
         case UploadProgressState.Pause: {
             // 是否已经被暂停了
-            const isPaused = globalPauseStateMapping.current.get(uniqueCode)!;
-            if (isPaused) {
+            const isPaused = globalPauseStateMapping.current.get(uniqueCode);
+            if (!isUndefined(isPaused)) {
                 // 表示暂停后 重新启动
+                const map = globalInfoMapping[uniqueCode],
+                    uploadFile = map.get("uploadFile") as any as File,
+                    calculationHashName = map.get("calculationHashName")!;
+
+                // 修改状态 暂停重试
+                globalProgressState.current.set(uniqueCode, UploadProgressState.PauseRetry);
+                emitUploadProgressState(UploadProgressState.PauseRetry, uniqueCode);
+
+                // 重新开始上传
+                await startUploadFileHandler(uploadFile, calculationHashName, uniqueCode);
             }
             break;
         }
@@ -76,7 +85,9 @@ emitterAndTaker.on(UPLOADING_FILE_SUBSCRIBE_DEFINE, function (el: QueueElementBa
         case UploadProgressState.RetryFailed:
         case UploadProgressState.Done:
         case UploadProgressState.Canceled:
+        case UploadProgressState.QuickUpload:
             progressNormalOrErrorCompletionHandler(el);
+            clearCacheStateHandler(el.uniqueCode!);
             break;
 
         // 这里是暂停处理
@@ -108,6 +119,20 @@ function progressNormalOrErrorCompletionHandler(el: QueueElementBase) {
 }
 
 /**
+ * 清除 缓存状态
+ *
+ * @author lihh
+ */
+function clearCacheStateHandler(uniqueCode: string) {
+    // 删除缓存数据
+    Reflect.deleteProperty(globalInfoMapping, uniqueCode);
+    globalProgressState.current.delete(uniqueCode);
+    globalDoneCallbackMapping.current.delete(uniqueCode);
+    globalPauseStateMapping.current.delete(uniqueCode);
+    sameFileUploadStateMapping.current.delete(uniqueCode);
+}
+
+/**
  * 计算断点续传的索引
  *
  * @author lihh
@@ -136,7 +161,9 @@ export async function computedBreakPointProgressHandler(calculationHashCode: str
  * @author lihh
  * @param uniqueCode 唯一的code
  */
-const isCanNextExecute = (uniqueCode: string) => [UploadProgressState.Waiting, UploadProgressState.Uploading, UploadProgressState.Retry].includes(globalProgressState.current.get(uniqueCode)!)
+function isCanNextExecute(uniqueCode: string) {
+    return [UploadProgressState.Waiting, UploadProgressState.Uploading, UploadProgressState.Retry, UploadProgressState.PauseRetry].includes(globalProgressState.current.get(uniqueCode)!)
+}
 
 /**
  * 是否需要中断
@@ -144,7 +171,9 @@ const isCanNextExecute = (uniqueCode: string) => [UploadProgressState.Waiting, U
  * @author lihh
  * @param uniqueCode 文件唯一的code
  */
-const isNeedInterrupt = (uniqueCode: string) => !isCanNextExecute(uniqueCode);
+function isNeedInterrupt(uniqueCode: string) {
+    return !isCanNextExecute(uniqueCode);
+}
 
 /**
  * 分割文件 上传事件
@@ -158,7 +187,7 @@ const isNeedInterrupt = (uniqueCode: string) => !isCanNextExecute(uniqueCode);
  */
 export async function splitFileUploadingHandler(idx: number, uniqueCode: string, calculationHashCode: string, chunks: Array<ChunkFileType>, retryTimes = 0) {
     // 步长, 保留一个小数点
-    const step = +(100 / chunks.length).toFixed(1);
+    const step = (+(100 / chunks.length)) | 0;
 
     // 如果循环执行结束后，说明分片文件上传结束。
     for (; idx < chunks.length && isCanNextExecute(uniqueCode);) {
@@ -169,10 +198,13 @@ export async function splitFileUploadingHandler(idx: number, uniqueCode: string,
         formData.append("file", chunk);
         const res = await sectionUploadReq(calculationHashCode, chunkFileName, formData);
 
-        await sleep(2000);
-
         // 判断是否写入成功
         if (res.success) {
+            // <补丁> 从这里判断下 是否暂停了, 防止并发覆盖状态
+            // 可能已经暂停了，但是异步请求发送了，所以要放弃这次操作
+            if (equals(UploadProgressState.Pause, globalProgressState.current.get(uniqueCode)))
+                continue;
+
             // 修改 上传中的状态
             emitUploadingProgressState(UploadProgressState.Uploading, uniqueCode, step);
             idx += 1;
@@ -216,10 +248,18 @@ export async function generateTask(calculationHashCode: string, uniqueCode: stri
         return;
 
     // 步长, 保留一个小数点
-    const step = +(100 / chunks.length).toFixed(1);
+    const step = (+(100 / chunks.length)) | 0;
 
-    // 判断 是否断点续传
-    const idx = await computedBreakPointProgressHandler(calculationHashCode, uniqueCode, step);
+    let idx;
+    // 判断是否为 暂停重试
+    const currentProgressState = globalProgressState.current.get(uniqueCode);
+    if (equals(currentProgressState, UploadProgressState.PauseRetry)) {
+        idx = globalPauseStateMapping.current.get(uniqueCode)!
+        // 已经使用到了 直接删除
+        globalPauseStateMapping.current.delete(uniqueCode);
+    } else
+        // 判断 是否断点续传
+        idx = await computedBreakPointProgressHandler(calculationHashCode, uniqueCode, step);
     // 开始分片上传
     await splitFileUploadingHandler(idx, uniqueCode, calculationHashCode, chunks);
 
@@ -233,15 +273,9 @@ export async function generateTask(calculationHashCode: string, uniqueCode: stri
     // 开始尝试合并文件
     const extName = globalInfoMapping[uniqueCode].get("extName")!;
     const res = await mergeUploadReq(calculationHashCode, `${calculationHashCode}.${extName}`);
-    if (res.success) {
+    if (res.success)
         // 表示 合并成功
         emitUploadProgressState(UploadProgressState.Done, uniqueCode);
-
-        // 删除缓存数据
-        Reflect.deleteProperty(globalInfoMapping, uniqueCode);
-        globalProgressState.current.delete(uniqueCode);
-        globalDoneCallbackMapping.current.delete(uniqueCode);
-    }
 }
 
 /**
@@ -291,6 +325,9 @@ function asyncWebWorkerActionHandler(uploadFile: File, uniqueCode: string) {
         // 添加订阅事件
         calculateNameWorker.current!.onmessage = async function (event) {
             const calculationHashName = event.data;
+            // 将 hashName 也保存起来
+            putGlobalInfoMappingHandler(uniqueCode, "calculationHashName", calculationHashName);
+
             // 判断 是否相同文件上传中
             if (sameFileUploadStateMapping.current.has(calculationHashName)) {
                 emitUploadProgressState(UploadProgressState.OtherUploading, uniqueCode);
@@ -327,7 +364,7 @@ export function uploadHandler(
     // 表示文件名称
     const {name: fileName, size: fontSize} = uploadFile;
     // 表示文件后缀
-    const extName = fileName.split(".").shift()!;
+    const extName = fileName.split(".").pop()!;
     // 将属性设置为全局属性，方便获取
     putGlobalInfoMappingHandler(uniqueCode, "fileName", fileName, "uniqueCode", uniqueCode, "fontSize", fontSize, "extName", extName, "uploadFile", uploadFile);
     // 修改状态

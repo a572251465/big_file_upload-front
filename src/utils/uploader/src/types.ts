@@ -18,6 +18,8 @@ export enum UploadProgressState {
     OtherUploading = "OtherUploading",
     // 暂停 状态
     Pause = "Pause",
+    // 暂停 重试
+    PauseRetry = "PauseRetry",
     // 被 取消状态
     Canceled = "Canceled",
     // 重试状态

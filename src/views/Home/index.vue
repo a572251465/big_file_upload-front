@@ -24,9 +24,12 @@
         <h3>{{ item.fileName }}</h3>
         <h5>{{ item.stateDesc }}</h5>
         <div class="detail">
-          <a-progress :percent="item.progress"/>
-          <close-outlined @click="cancelProgressHandler(item.uniqueCode)"/>
-          <caret-left-outlined v-if="UploadProgressState.Pause == item.type"/>
+          <a-progress :percent="item.progress" class="margin"/>
+          <close-outlined @click="cancelProgressHandler(item.uniqueCode)"
+                          class="margin"/>
+          <caret-left-outlined @click="pauseHandler(item.uniqueCode)"
+                               class="margin"
+                               v-if="UploadProgressState.Pause == item.type"/>
           <pause-outlined @click="pauseHandler(item.uniqueCode)" v-else/>
         </div>
       </li>
@@ -52,6 +55,10 @@ ul {
 
   .detail {
     display: flex;
+
+    .margin {
+      margin: 0 5px;
+    }
   }
 }
 </style>
