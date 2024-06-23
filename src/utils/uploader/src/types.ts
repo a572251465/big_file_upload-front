@@ -50,6 +50,8 @@ export type QueueElementBase = Partial<{
     uploadFile: File,
     // 重试次数
     retryTimes: number;
+    // 暂停索引 -1 == 合并中
+    pauseIndex: number;
 }>;
 
 /* 上传文件的 配置文件 */

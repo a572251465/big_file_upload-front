@@ -32,6 +32,10 @@ export const globalInfoMapping: Record<string, Map<string, string>> = {};
 export const sameFileUploadStateMapping: CurrentType<Map<string, string>> = {
     current: new Map()
 };
+// 全局的暂停指令
+export const globalPauseStateMapping: CurrentType<Map<string, number>> = {
+    current: new Map()
+}
 
 /**
  * 设置 全局的信息
@@ -100,6 +104,7 @@ export function generateBaseProgressState(type: UploadProgressState, uniqueCode:
         progress: 0,
         step: 0,
         retryTimes: 0,
+        pauseIndex: 0,
         fileSize: map.get("fileSize") as unknown as number,
     };
 
@@ -145,6 +150,21 @@ export function emitRetryProgressState(uniqueCode: string, retryTimes: number) {
 export function emitUploadingProgressState(type: UploadProgressState, uniqueCode: string, step: number) {
     const baseProgressState = generateBaseProgressState(type, uniqueCode);
     baseProgressState.step = step;
+
+    emitterAndTaker.emit(UPLOADING_FILE_SUBSCRIBE_DEFINE, baseProgressState);
+}
+
+/**
+ * 提交 暂停进度状态
+ *
+ * @author lihh
+ * @param type 类型
+ * @param uniqueCode 唯一的值
+ * @param pauseIndex 索引
+ */
+export function emitPauseProgressState(type: UploadProgressState, uniqueCode: string, pauseIndex: number) {
+    const baseProgressState = generateBaseProgressState(type, uniqueCode);
+    baseProgressState.pauseIndex = pauseIndex;
 
     emitterAndTaker.emit(UPLOADING_FILE_SUBSCRIBE_DEFINE, baseProgressState);
 }

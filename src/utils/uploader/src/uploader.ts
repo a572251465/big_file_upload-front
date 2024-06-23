@@ -1,12 +1,14 @@
 import {
     calculateNameWorker,
     calculateUploaderConfig,
+    emitPauseProgressState,
     emitRetryProgressState,
     emitUploadingProgressState,
     emitUploadProgressState,
     generateUniqueCode,
     globalDoneCallbackMapping,
     globalInfoMapping,
+    globalPauseStateMapping,
     globalProgressState,
     putGlobalInfoMappingHandler,
     sameFileUploadStateMapping,
@@ -40,7 +42,7 @@ const uploaderDefaultConfig: UploadConfigType = {
     maxRetryTimes: 3
 };
 
-// 添加 容器动作 监听
+// 监听 暂停/ 取消的监听动作
 emitterAndTaker.on(REVERSE_CONTAINER_ACTION, function (uniqueCode: string, action: UploadProgressState) {
     // 判断 动作是否合法
     if (
@@ -53,27 +55,57 @@ emitterAndTaker.on(REVERSE_CONTAINER_ACTION, function (uniqueCode: string, actio
     globalProgressState.current.set(uniqueCode, action);
 
 
-    // 判断是否是 取消状态
-    if (equals(action, UploadProgressState.Canceled))
-        emitUploadProgressState(UploadProgressState.Canceled, uniqueCode);
+    switch (action) {
+        case UploadProgressState.Canceled:
+            emitUploadProgressState(UploadProgressState.Canceled, uniqueCode);
+            break;
+        case UploadProgressState.Pause: {
+            // 是否已经被暂停了
+            const isPaused = globalPauseStateMapping.current.get(uniqueCode)!;
+            if (isPaused) {
+                // 表示暂停后 重新启动
+            }
+            break;
+        }
+    }
 });
-// 订阅事件【UPLOADING_FILE_SUBSCRIBE_DEFINE】，每个状态都会执行这个订阅
+// 订阅事件【UPLOADING_FILE_SUBSCRIBE_DEFINE】，每个状态改变 都会执行这个方法
 emitterAndTaker.on(UPLOADING_FILE_SUBSCRIBE_DEFINE, function (el: QueueElementBase) {
     // 同时订阅 判断指定的状态
-    if ([UploadProgressState.RetryFailed, UploadProgressState.Done, UploadProgressState.Canceled].includes(el.type!)) {
-        const {uniqueCode} = el;
+    switch (el.type) {
+        case UploadProgressState.RetryFailed:
+        case UploadProgressState.Done:
+        case UploadProgressState.Canceled:
+            progressNormalOrErrorCompletionHandler(el);
+            break;
 
-        // 表示将要删除的元素
-        const willDeleteElements: Array<string> = [];
-        for (const [key, value] of sameFileUploadStateMapping.current)
-            if (equals(uniqueCode, value))
-                willDeleteElements.push(key);
-
-        // 删除元素
-        for (const key of willDeleteElements)
-            sameFileUploadStateMapping.current.delete(key);
+        // 这里是暂停处理
+        case UploadProgressState.Pause:
+            // 设置暂停状态
+            if (!globalPauseStateMapping.current.has(el.uniqueCode!))
+                globalPauseStateMapping.current.set(el.uniqueCode!, el.pauseIndex!);
     }
 })
+
+/**
+ * 正常 异常结束的事件
+ *
+ * @author lihh
+ * @param el queue 消息
+ */
+function progressNormalOrErrorCompletionHandler(el: QueueElementBase) {
+    const {uniqueCode} = el;
+
+    // 表示将要删除的元素
+    const willDeleteElements: Array<string> = [];
+    for (const [key, value] of sameFileUploadStateMapping.current)
+        if (equals(uniqueCode, value))
+            willDeleteElements.push(key);
+
+    // 删除元素
+    for (const key of willDeleteElements)
+        sameFileUploadStateMapping.current.delete(key);
+}
 
 /**
  * 计算断点续传的索引
@@ -162,6 +194,12 @@ export async function splitFileUploadingHandler(idx: number, uniqueCode: string,
             await splitFileUploadingHandler(idx, uniqueCode, calculationHashCode, chunks, retryTimes);
         }
     }
+
+    // 表示当前的状态
+    const currentProgressState = globalProgressState.current.get(uniqueCode)!;
+    // 判断是否暂停指令停止的
+    if (equals(UploadProgressState.Pause, currentProgressState))
+        emitPauseProgressState(UploadProgressState.Pause, uniqueCode, idx);
 }
 
 /**
