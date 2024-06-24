@@ -1,4 +1,4 @@
-import {isEmpty, isHas} from "jsmethod-extra";
+import {isEmpty, isHas, sleep} from "jsmethod-extra";
 import {
     calculateNameWorker,
     emitterAndTaker,
@@ -208,6 +208,16 @@ export function emitPauseProgressState(
     baseProgressState!.pauseIndex = pauseIndex;
 
     emitterAndTaker.emit(UPLOADING_FILE_SUBSCRIBE_DEFINE, baseProgressState);
+}
+
+/**
+ * 生产 提高并发的随机数
+ *
+ * @author lihh
+ * @param unit 单位
+ */
+export async function upConcurrentHandler(unit: number) {
+    await sleep((Math.random() * unit) | 0);
 }
 
 /**

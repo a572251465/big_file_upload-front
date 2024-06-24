@@ -96,20 +96,19 @@ emitterAndTaker.on(UPLOADING_FILE_SUBSCRIBE_DEFINE, function (el: Required<Queue
   stateDesc: string
 }>) {
   // 判断是否存在
-  const existingElement = allProgress.value.find(item => equals(item.uniqueCode, el.uniqueCode));
+  let existingElement = allProgress.value.find(item => equals(item.uniqueCode, el.uniqueCode));
   // 索引
   const index = allProgress.value.findIndex(item => equals(item.uniqueCode, el.uniqueCode));
   // 判断 元素是否存在
-  if (existingElement) {
+  if (existingElement)
     existingElement.type = el.type;
-    existingElement.stateDesc = UploadProgressStateText[existingElement!.type];
-  }
 
   switch (el.type) {
     case UploadProgressState.Prepare: {
       if (isNotEmpty(existingElement))
         return;
 
+      existingElement = el;
       allProgress.value.unshift(el);
       break;
     }
@@ -143,6 +142,10 @@ emitterAndTaker.on(UPLOADING_FILE_SUBSCRIBE_DEFINE, function (el: Required<Queue
       break;
     }
   }
+
+  // 判断 元素是否存在
+  if (existingElement)
+    existingElement.stateDesc = UploadProgressStateText[existingElement!.type];
 })
 
 const allProgress = ref<Array<Required<QueueElementBase & {

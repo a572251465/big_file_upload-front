@@ -33,6 +33,7 @@ import {
     putGlobalInfoMappingHandler,
     QueueElementBase,
     sameFileUploadStateMapping,
+    upConcurrentHandler,
     UploadConfigType,
     uploaderDefaultConfig,
     UploadProgressState,
@@ -215,6 +216,8 @@ export async function splitFileUploadingHandler(
     // 如果循环执行结束后，说明分片文件上传结束。
     for (; idx < chunks.length && isCanNextExecute(uniqueCode);) {
         const {chunk, chunkFileName} = chunks[idx];
+
+        await upConcurrentHandler(100);
 
         // 表示 formData 参数
         const formData = new FormData();
@@ -456,7 +459,7 @@ export function uploadHandler(
     uploadFile: File,
     callback?: (baseDir: string) => void
 ) {
-    return new Promise<string>((resolve, reject) => {
+    return new Promise<string>(async (resolve, reject) => {
         // 每个文件分配一个code，唯一的code
         const uniqueCode = generateUniqueCode();
         // 判断 callback 是否一个方法
@@ -485,6 +488,7 @@ export function uploadHandler(
         );
         // 修改状态
         emitUploadProgressState(UploadProgressState.Prepare, uniqueCode);
+        await upConcurrentHandler(1000);
 
         // 判断是否加载 worker
         asyncWebWorkerActionHandler(uploadFile, uniqueCode);

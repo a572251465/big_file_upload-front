@@ -6,7 +6,7 @@ export const pLimit: CurrentType<PLimit | null> = {
 };
 // 表示 默认的配置文件
 export const uploaderDefaultConfig: UploadConfigType = {
-    concurrentLimit: 2,
+    concurrentLimit: 1,
     maxRetryTimes: 3,
 };
 
