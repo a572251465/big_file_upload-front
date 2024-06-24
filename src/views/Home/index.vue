@@ -1,5 +1,23 @@
 <template>
   <div class="home">
+    <ul>
+      <li v-for="item in allProgress" :key="item.uniqueCode">
+        <h3>{{ item.fileName }}</h3>
+        <h5>{{ item.stateDesc }}</h5>
+        <div class="detail">
+          <a-progress :percent="item.progress" class="margin"/>
+          <close-outlined @click="cancelProgressHandler(item.uniqueCode)"
+                          class="margin"/>
+          <caret-left-outlined @click="pauseHandler(item.uniqueCode)"
+                               class="margin"
+                               v-if="UploadProgressState.Pause == item.type"/>
+          <pause-outlined @click="pauseHandler(item.uniqueCode)" v-else/>
+        </div>
+      </li>
+    </ul>
+
+    <a-divider>这是分割线</a-divider>
+
     <a-upload-dragger
         name="file"
         accept="*.mp4"
@@ -16,24 +34,6 @@
         band files
       </p>
     </a-upload-dragger>
-
-    <a-divider>这是分割线</a-divider>
-
-    <ul>
-      <li v-for="item in allProgress" :key="item.uniqueCode">
-        <h3>{{ item.fileName }}</h3>
-        <h5>{{ item.stateDesc }}</h5>
-        <div class="detail">
-          <a-progress :percent="item.progress" class="margin"/>
-          <close-outlined @click="cancelProgressHandler(item.uniqueCode)"
-                          class="margin"/>
-          <caret-left-outlined @click="pauseHandler(item.uniqueCode)"
-                               class="margin"
-                               v-if="UploadProgressState.Pause == item.type"/>
-          <pause-outlined @click="pauseHandler(item.uniqueCode)" v-else/>
-        </div>
-      </li>
-    </ul>
   </div>
 </template>
 
@@ -49,7 +49,7 @@ ul {
   padding: 20px;
   border-radius: 6px;
   min-height: 200px;
-  max-height: 400px;
+  max-height: 300px;
   overflow-x: hidden;
   overflow-y: auto;
 
@@ -149,10 +149,14 @@ const allProgress = ref<Array<Required<QueueElementBase & {
   stateDesc: string
 }>>>([]);
 
+function callback(res: string) {
+  console.log("2 -- " + res);
+}
+
 function beforeUploadHandler(file: File) {
   // 表示 不同的 code
-  uploadHandler(file, () => {
-
+  uploadHandler(file, callback).then(res => {
+    console.log("1 -- " + res)
   });
   return false;
 }
