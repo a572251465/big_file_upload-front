@@ -1,1 +1,2 @@
-export * from "./src/assign";
+export * from "./assign";
+export * from "./uploader";
