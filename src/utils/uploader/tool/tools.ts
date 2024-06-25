@@ -163,6 +163,7 @@ export function emitRetryProgressState(uniqueCode: string, retryTimes: number) {
         UploadProgressState.Retry,
         uniqueCode,
     );
+    if (isEmpty(baseProgressState)) return;
     baseProgressState!.retryTimes = retryTimes;
 
     emitterAndTaker.emit(UPLOADING_FILE_SUBSCRIBE_DEFINE, baseProgressState);
@@ -184,6 +185,7 @@ export function emitUploadingProgressState(
     if (isCanCommitProgressState(uniqueCode, type)) return;
 
     const baseProgressState = generateBaseProgressState(type, uniqueCode);
+    if (isEmpty(baseProgressState)) return;
     baseProgressState!.step = step;
 
     emitterAndTaker.emit(UPLOADING_FILE_SUBSCRIBE_DEFINE, baseProgressState);
@@ -205,6 +207,7 @@ export function emitPauseProgressState(
     if (isCanCommitProgressState(uniqueCode, type)) return;
 
     const baseProgressState = generateBaseProgressState(type, uniqueCode);
+    if (isEmpty(baseProgressState)) return;
     baseProgressState!.pauseIndex = pauseIndex;
 
     emitterAndTaker.emit(UPLOADING_FILE_SUBSCRIBE_DEFINE, baseProgressState);

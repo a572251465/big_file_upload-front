@@ -1,6 +1,7 @@
 export * from "./variable";
 export * from "./emitterAndTaker";
 export * from "./constant";
+export * from "./Logger"
 export * from "./subscriber";
 export * from "./PLimit";
 export * from "./tools";

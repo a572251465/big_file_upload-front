@@ -1,4 +1,9 @@
-import {CurrentType, UploadConfigType, UploadProgressState} from "./types";
+import {
+    CurrentType,
+    ProcessReturnType,
+    UploadConfigType,
+    UploadProgressState
+} from "./types";
 import {PLimit} from "./PLimit";
 
 export const pLimit: CurrentType<PLimit | null> = {
@@ -6,7 +11,7 @@ export const pLimit: CurrentType<PLimit | null> = {
 };
 // 表示 默认的配置文件
 export const uploaderDefaultConfig: UploadConfigType = {
-    concurrentLimit: 1,
+    concurrentLimit: 3,
     maxRetryTimes: 3,
 };
 
@@ -25,7 +30,7 @@ export const globalProgressState: CurrentType<
 };
 // 全局的 done callback 映射
 export const globalDoneCallbackMapping: CurrentType<
-    Map<string, [(baseDir: string) => void, (error: unknown) => void, (baseDir: string) => void]>
+    Map<string, [(arr: ProcessReturnType) => void, (error: unknown) => void, (arr: ProcessReturnType) => void]>
 > = {
     current: new Map(),
 };
@@ -41,9 +46,13 @@ export const sameFileUploadStateMapping: CurrentType<
 export const globalPauseStateMapping: CurrentType<Map<string, number>> = {
     current: new Map(),
 };
+// 等待计算 hash 的队列
+export const globalWaitingHashCalculationQueue: CurrentType<Array<[File, string]>> = {
+    current: []
+}
 
 // 这是一个默认的空方法
-export function defaultEmptyFunction(baseDir: string) {
-    if (true)
-        console.log(baseDir);
+export function defaultEmptyFunction(arr: ProcessReturnType) {
+    if (false)
+        console.log(arr);
 }

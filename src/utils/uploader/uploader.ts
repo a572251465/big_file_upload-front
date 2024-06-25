@@ -28,8 +28,10 @@ import {
     globalInfoMapping,
     globalPauseStateMapping,
     globalProgressState,
+    globalWaitingHashCalculationQueue,
     PLimit,
     pLimit,
+    ProcessReturnType,
     putGlobalInfoMappingHandler,
     QueueElementBase,
     sameFileUploadStateMapping,
@@ -180,6 +182,7 @@ function isCanNextExecute(uniqueCode: string) {
         UploadProgressState.Uploading,
         UploadProgressState.Retry,
         UploadProgressState.PauseRetry,
+        UploadProgressState.BreakPointUpload,
     ].includes(globalProgressState.current.get(uniqueCode)!);
 }
 
@@ -402,6 +405,40 @@ function sameFileUploadingHandler(
 }
 
 /**
+ * 计算 hash 名称的事件
+ *
+ * @author lihh
+ * @param uploadFile 上传的文件
+ * @param uniqueCode 唯一的code
+ */
+function calculationHashNameHandler(uploadFile: File, uniqueCode: string) {
+    // 修改状态为 等待状态
+    emitUploadProgressState(UploadProgressState.HashCalculationWaiting, uniqueCode);
+    // 判断队列是否为空
+    if (isEmpty(globalWaitingHashCalculationQueue.current)) {
+        // 直接运行
+        asyncWebWorkerActionHandler(uploadFile, uniqueCode);
+    } else {
+        // 添加到队列中
+        globalWaitingHashCalculationQueue.current.push([uploadFile, uniqueCode]);
+    }
+}
+
+/**
+ * 唤醒 新的队列的元素
+ *
+ * @author lihh
+ */
+function wakeupNewQueueElementHandler() {
+    // 队列为空的话 直接返回
+    if (isEmpty(globalWaitingHashCalculationQueue.current)) return;
+    const [uploadFile, uniqueCode] = globalWaitingHashCalculationQueue.current.shift()!;
+
+    // 开始计算hash
+    asyncWebWorkerActionHandler(uploadFile, uniqueCode);
+}
+
+/**
  * 异步 web worker 加载动作
  *
  * @author lihh
@@ -415,6 +452,9 @@ function asyncWebWorkerActionHandler(uploadFile: File, uniqueCode: string) {
         calculateNameWorker.current!.postMessage(uploadFile);
         // 添加订阅事件
         calculateNameWorker.current!.onmessage = async function (event) {
+            // 开始尝试 计算新的
+            wakeupNewQueueElementHandler();
+
             const calculationHashName = event.data;
             // 将 hashName 也保存起来
             putGlobalInfoMappingHandler(
@@ -457,9 +497,9 @@ function asyncWebWorkerActionHandler(uploadFile: File, uniqueCode: string) {
  */
 export function uploadHandler(
     uploadFile: File,
-    callback?: (baseDir: string) => void
+    callback?: (arr: ProcessReturnType) => void
 ) {
-    return new Promise<string>(async (resolve, reject) => {
+    return new Promise<ProcessReturnType>(async (resolve, reject) => {
         // 每个文件分配一个code，唯一的code
         const uniqueCode = generateUniqueCode();
         // 判断 callback 是否一个方法
@@ -488,10 +528,9 @@ export function uploadHandler(
         );
         // 修改状态
         emitUploadProgressState(UploadProgressState.Prepare, uniqueCode);
-        await upConcurrentHandler(1000);
 
-        // 判断是否加载 worker
-        asyncWebWorkerActionHandler(uploadFile, uniqueCode);
+        // 计算 hash 名称的事件
+        calculationHashNameHandler(uploadFile, uniqueCode);
     });
 }
 

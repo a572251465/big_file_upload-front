@@ -44,6 +44,8 @@ export class PLimit {
         if (this.currentExecuteTaskCount >= this.maxConcurrentRequests) return;
 
         this.currentExecuteTaskCount += 1;
+        console.log("1 -- this.currentExecuteTaskCount", this.currentExecuteTaskCount)
+        console.log("1 -- this.waitTasks", this.waitTasks)
 
         Promise.resolve().then(async () => {
             await asyncMethod();
@@ -51,6 +53,9 @@ export class PLimit {
 
             // 随机等待一定时间, 避免并发修改
             await sleep((Math.random() * 20) | 0);
+
+            console.log("2 -- this.currentExecuteTaskCount", this.currentExecuteTaskCount)
+            console.log("2 -- this.waitTasks", this.waitTasks)
 
             // 拿到新的任务
             const newTask = this.waitTasks.shift();

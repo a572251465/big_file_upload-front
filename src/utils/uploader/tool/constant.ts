@@ -7,6 +7,7 @@ export const UploadProgressStateText: Record<
     string
 > = {
     [UploadProgressState.Prepare]: "准备中 ...",
+    [UploadProgressState.HashCalculationWaiting]: "Hash 计算等待中 ...",
     [UploadProgressState.Waiting]: "排队等待中 ...",
     [UploadProgressState.Uploading]: "切片文件 上传中 ...",
     [UploadProgressState.Merge]: "文件合并中 ...",
