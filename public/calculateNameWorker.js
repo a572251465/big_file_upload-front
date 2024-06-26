@@ -1,6 +1,8 @@
 self.addEventListener("message", async (event) => {
   //获取主进程发过来的文件
-  const file = event.data;
+  const { file, flag } = event.data || {};
+  if (flag !== "file") return;
+
   //单独开一个进程来进行hash计算并得到新的文件名
   const fileName = await getFileName(file);
   //把文件名再发回主进程
