@@ -1,6 +1,6 @@
 import {
     CurrentType,
-    ProcessReturnType,
+    ProgressReturnType,
     UploadConfigType,
     UploadProgressState
 } from "./types";
@@ -30,7 +30,7 @@ export const globalProgressState: CurrentType<
 };
 // 全局的 done callback 映射
 export const globalDoneCallbackMapping: CurrentType<
-    Map<string, [(arr: ProcessReturnType) => void, (error: unknown) => void, (arr: ProcessReturnType) => void]>
+    Map<string, [(arr: ProgressReturnType) => void, (error: unknown) => void, (arr: ProgressReturnType) => void]>
 > = {
     current: new Map(),
 };
@@ -52,7 +52,7 @@ export const globalWaitingHashCalculationQueue: CurrentType<Array<[File, string]
 }
 
 // 这是一个默认的空方法
-export function defaultEmptyFunction(arr: ProcessReturnType) {
+export function defaultEmptyFunction(arr: ProgressReturnType) {
     if (false)
         console.log(arr);
 }

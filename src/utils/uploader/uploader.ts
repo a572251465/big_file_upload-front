@@ -31,7 +31,7 @@ import {
   globalWaitingHashCalculationQueue,
   PLimit,
   pLimit,
-  ProcessReturnType,
+  ProgressReturnType,
   putGlobalInfoMappingHandler,
   QueueElementBase,
   sameFileUploadStateMapping,
@@ -504,9 +504,9 @@ function asyncWebWorkerActionHandler(uploadFile: File, uniqueCode: string) {
  */
 export function uploadHandler(
   uploadFile: File,
-  callback?: (arr: ProcessReturnType) => void,
+  callback?: (arr: ProgressReturnType) => void,
 ) {
-  return new Promise<ProcessReturnType>(async (resolve, reject) => {
+  return new Promise<ProgressReturnType>(async (resolve, reject) => {
     // 每个文件分配一个code，唯一的code
     const uniqueCode = generateUniqueCode();
     // 判断 callback 是否一个方法
@@ -519,7 +519,7 @@ export function uploadHandler(
     ]);
 
     // 表示文件名称
-    const { name: fileName, size: fontSize } = uploadFile;
+    const { name: fileName, size: fileSize } = uploadFile;
     // 表示文件后缀
     const extName = fileName.split(".").pop()!;
     // 将属性设置为全局属性，方便获取
@@ -529,8 +529,8 @@ export function uploadHandler(
       fileName,
       "uniqueCode",
       uniqueCode,
-      "fontSize",
-      fontSize,
+      "fileSize",
+      fileSize,
       "extName",
       extName,
       "uploadFile",

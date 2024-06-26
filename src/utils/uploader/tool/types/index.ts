@@ -76,4 +76,4 @@ export interface CurrentType<T = null> {
 }
 
 // 表示返回类型
-export type ProcessReturnType = [baseDir: string, fileName: string];
+export type ProgressReturnType = [baseDir: string, fileName: string];
