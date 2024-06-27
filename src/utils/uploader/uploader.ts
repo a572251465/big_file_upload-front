@@ -2,7 +2,7 @@ import {
   equals,
   isArray,
   isEmpty,
-  isFunction,
+  isFunction, isHas,
   isNotEmpty,
   sleep,
 } from "jsmethod-extra";
@@ -100,6 +100,7 @@ export async function sameFileNeedProceedHandler(uniqueCode: string) {
 export function progressNormalOrErrorCompletionHandler(el: QueueElementBase) {
   const { uniqueCode } = el;
 
+  if (!isHas(globalInfoMapping, uniqueCode!)) return;
   // 拿到 calculationHashName
   const calculationHashName = globalInfoMapping[uniqueCode!].get(
     "calculationHashName",
