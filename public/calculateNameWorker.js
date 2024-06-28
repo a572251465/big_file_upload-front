@@ -28,7 +28,7 @@ self.addEventListener("message", async (event) => {
   async function calculateFileHash(file) {
     /* 这里做 兼容性处理, 需要在 http 下运行 */
     if (typeof crypto.subtle === "undefined") {
-      return `${(Math.random() * 10000000000) | 0}_${+new Date()}_${(Math.random() * 10000000000) | 0}`;
+      return `${(Math.random() * 10000000000) | 0}${+new Date()}${(Math.random() * 10000000000) | 0}`;
     }
     const arrayBuffer = await file.arrayBuffer();
     const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
