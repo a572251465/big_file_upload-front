@@ -68,6 +68,8 @@ export type UploadConfigType = {
     maxRetryTimes: number;
     // 并发限制次数
     concurrentLimit: number;
+    // 是否持久化
+    persist: boolean
 };
 
 /* 表示 current 类型 */

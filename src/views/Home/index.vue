@@ -76,8 +76,7 @@ import {useBigFileUpload} from "@/hooks";
 
 const [allProgress, cancelProgressHandler, pauseProgressHandler] = useBigFileUpload();
 
-
-function beforeUploadHandler(file: File) {
+async function beforeUploadHandler(file: File) {
   // 表示 不同的 code
   uploadHandler(file)
   return false;

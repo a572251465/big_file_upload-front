@@ -13,6 +13,7 @@ export const pLimit: CurrentType<PLimit | null> = {
 export const uploaderDefaultConfig: UploadConfigType = {
     concurrentLimit: 3,
     maxRetryTimes: 3,
+    persist: false
 };
 
 export const calculateNameWorker: CurrentType<null | Worker> = {
