@@ -7,3 +7,4 @@ export * from "./PLimit";
 export * from "./tools";
 export * from "./file";
 export * from "./types";
+export * from "./store";

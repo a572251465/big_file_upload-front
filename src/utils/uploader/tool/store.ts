@@ -1,9 +1,11 @@
 import localforage from "localforage";
+import {isEmpty} from "jsmethod-extra";
 
 /* 设置 配置参数 */
 localforage.config({
     storeName: "big_file_upload",
-    driver: localforage.INDEXEDDB
+    driver: localforage.INDEXEDDB,
+    name: "myApp"
 });
 
 /**
@@ -12,8 +14,11 @@ localforage.config({
  * @author lihh
  * @param key 主键 key
  */
-function deleteItemHandler(key: string) {
+async function deleteItemHandler(key: string) {
+    const allKeys = await localforage.keys();
+    if (isEmpty(allKeys)) return;
 
+    await localforage.removeItem(key);
 }
 
 /**
@@ -21,8 +26,18 @@ function deleteItemHandler(key: string) {
  *
  * @author lihh
  */
-function getAllItemHandler(): Array<Record<string, Array<unknown>>> {
-    return [];
+async function getAllItemHandler() {
+    /* 首先 判断是否支持 indexedDB */
+    if (!localforage.supports(localforage.INDEXEDDB)) return null;
+
+    const allKeys = await localforage.keys();
+    if (isEmpty(allKeys)) return null;
+
+    const arrayValues: Record<string, Array<unknown>> = {};
+    for (const arrayKey of allKeys) {
+        arrayValues[arrayKey] = await localforage.getItem(arrayKey) as Array<unknown>;
+    }
+    return arrayValues;
 }
 
 /**
@@ -32,8 +47,8 @@ function getAllItemHandler(): Array<Record<string, Array<unknown>>> {
  * @param key 添加的 key
  * @param value value 的集合
  */
-function addItemHandler(key: string, value: Array<unknown>) {
-
+async function addItemHandler(key: string, value: Array<unknown>) {
+    await localforage.setItem(key, value);
 }
 
 /**
