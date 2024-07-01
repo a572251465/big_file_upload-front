@@ -1,5 +1,4 @@
 import {
-    emitterAndTaker,
     QueueElementBase,
     REVERSE_CONTAINER_ACTION,
     UPLOADING_FILE_SUBSCRIBE_DEFINE,
@@ -7,7 +6,13 @@ import {
     UploadProgressStateText,
 } from "@/utils";
 import {ref} from "vue";
-import {equals, isHas, isNotEmpty, strFormat} from "jsmethod-extra";
+import {
+    emitterAndTaker,
+    equals,
+    isHas,
+    isNotEmpty,
+    strFormat
+} from "jsmethod-extra";
 
 export type QueueElementBaseExtend = Required<
     QueueElementBase & {

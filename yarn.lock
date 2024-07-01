@@ -585,10 +585,10 @@ is-what@^3.14.1:
   resolved "https://registry.npmmirror.com/js-tokens/-/js-tokens-4.0.0.tgz#19203fb59991df98e3a287050d4647cdeaf32499"
   integrity sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==
 
-jsmethod-extra@^2.0.2:
-  version "2.0.2"
-  resolved "https://registry.npmmirror.com/jsmethod-extra/-/jsmethod-extra-2.0.2.tgz#b025821fd8cd3b92dc7bc3a7c6de16b3c62db2d7"
-  integrity sha512-PNyPkPjd/Q/iUja+e9ECtwsIYOpDQ2PcUphfRk6LKpLAdGlOrX7tRDHYgo4u0ggzqdfQZ86n+yghfp8Vt7X0XQ==
+jsmethod-extra@^2.0.5:
+  version "2.0.5"
+  resolved "https://registry.npmjs.org/jsmethod-extra/-/jsmethod-extra-2.0.5.tgz#4ca3a9b7981912143d2251772871933a86650264"
+  integrity sha512-6pjgk/VW5q+8dr2SAU/hhFaFpoEzPePO/Gtn4XnfWkHzRgMfokZoqrP7/YcZ9VkNd/N1wmpOWMq3OjkS+yZ+NQ==
 
 less@^4.2.0:
   version "4.2.0"

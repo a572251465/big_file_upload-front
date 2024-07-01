@@ -4,16 +4,16 @@ import {
   UploadConfigType,
   UploadProgressState,
 } from "./types";
-import { PLimit } from "./PLimit";
+import { IPLimitC } from "jsmethod-extra";
 
-export const pLimit: CurrentType<PLimit | null> = {
+export const pLimit: CurrentType<IPLimitC | null> = {
   current: null,
 };
 // 表示 默认的配置文件
 export const uploaderDefaultConfig: Required<UploadConfigType> = {
-    concurrentLimit: 3,
-    maxRetryTimes: 3,
-    persist: false
+  concurrentLimit: 3,
+  maxRetryTimes: 3,
+  persist: false,
 };
 
 export const calculateNameWorker: CurrentType<null | Worker> = {
