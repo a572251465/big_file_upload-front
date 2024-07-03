@@ -1,18 +1,16 @@
 import {
-    QueueElementBase,
-    REVERSE_CONTAINER_ACTION,
-    UPLOADING_FILE_SUBSCRIBE_DEFINE,
-    UploadProgressState,
-    UploadProgressStateText,
-} from "@/utils";
-import {ref} from "vue";
-import {
     emitterAndTaker,
     equals,
     isHas,
     isNotEmpty,
-    strFormat
-} from "jsmethod-extra";
+    QueueElementBase,
+    REVERSE_CONTAINER_ACTION,
+    strFormat,
+    UPLOADING_FILE_SUBSCRIBE_DEFINE,
+    UploadProgressState,
+    UploadProgressStateText,
+} from "upload-file-jdk";
+import {ref} from "vue";
 
 export type QueueElementBaseExtend = Required<
     QueueElementBase & {

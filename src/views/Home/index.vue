@@ -65,7 +65,7 @@ ul {
 </style>
 
 <script lang="ts" setup>
-import {uploadHandler, UploadProgressState} from "@/utils/uploader";
+import {uploadHandler, UploadProgressState} from "upload-file-jdk";
 import {
   CaretLeftOutlined,
   CloseOutlined,
@@ -84,10 +84,10 @@ const [allProgress, cancelProgressHandler, pauseProgressHandler] = useBigFileUpl
 
 uploadHandler.config({
   persist: true, req: {
-    listFilesReq: listFilesReq,
-    sectionUploadReq: sectionUploadReq,
-    mergeUploadReq: mergeUploadReq,
-    verifyFileExistReq: verifyFileExistReq,
+    listFilesReq,
+    sectionUploadReq,
+    mergeUploadReq,
+    verifyFileExistReq,
   }
 });
 
