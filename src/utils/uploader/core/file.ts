@@ -1,4 +1,4 @@
-import {CHUNK_SIZE_100, CHUNK_SIZE_30} from "@/utils";
+import {CHUNK_SIZE_100, CHUNK_SIZE_30} from "./constant";
 import {calculateChunkSize} from "./tools";
 import {ChunkFileType} from "./types";
 

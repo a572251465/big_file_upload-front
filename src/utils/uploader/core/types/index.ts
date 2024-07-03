@@ -31,7 +31,7 @@ export enum UploadProgressState {
     // 重试失败
     RetryFailed = "RetryFailed",
     // 刷新重试
-    RefreshRetry = "RefreshRetry"
+    RefreshRetry = "RefreshRetry",
 }
 
 /* 分割文件类型 */
@@ -71,8 +71,16 @@ export type UploadConfigType = Partial<{
     // 并发限制次数
     concurrentLimit: number;
     // 是否持久化
-    persist: boolean
-}>;
+    persist: boolean;
+}> & {
+    // 请求接口
+    req: {
+        listFilesReq: IListFilesReq | null,
+        sectionUploadReq: ISectionUploadReq | null,
+        mergeUploadReq: IMergeUploadReq | null,
+        verifyFileExistReq: IVerifyFileExistReq | null
+    }
+};
 
 /* 表示 current 类型 */
 export interface CurrentType<T = null> {
@@ -81,3 +89,17 @@ export interface CurrentType<T = null> {
 
 // 表示返回类型
 export type ProgressReturnType = [baseDir: string, fileName: string];
+
+// 表示 请求响应类型
+export type ICommonResponse<T = unknown> = {
+    data: T;
+    message: string;
+    success: boolean;
+    code: number;
+};
+
+// 表示接口类型
+export type IListFilesReq = (calculationHashCode: string) => Promise<ICommonResponse<Array<string>>>
+export type ISectionUploadReq = (calculationHashCode: string, chunkFileName: string, formData: FormData) => Promise<ICommonResponse>
+export type IMergeUploadReq = (calculationHashCode: string, fileName: string) => Promise<ICommonResponse>
+export type IVerifyFileExistReq = (calculationHashName: string) => Promise<ICommonResponse>

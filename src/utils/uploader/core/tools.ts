@@ -1,11 +1,19 @@
-import {emitterAndTaker, isEmpty, isHas, sleep} from "jsmethod-extra";
 import {
-    calculateNameWorker,
-    globalInfoMapping,
-    globalProgressState,
-    UPLOADING_FILE_SUBSCRIBE_DEFINE
-} from "@/utils";
+  emitterAndTaker,
+  isEmpty,
+  isHas,
+  isUndefined,
+  sleep,
+  valueOrDefault,
+} from "jsmethod-extra";
 import {QueueElementBase, UploadProgressState} from "./types";
+import {
+  calculateNameWorker,
+  globalInfoMapping,
+  globalProgressState,
+} from "./variable";
+import {UPLOADING_FILE_SUBSCRIBE_DEFINE} from "./constant";
+import {Logger} from "./Logger";
 
 /**
  * 克隆全局的信息 映射事件
@@ -229,7 +237,20 @@ export async function upConcurrentHandler(unit: number) {
  */
 (function () {
   // 判断 work 是否已经加载完
-  if (isEmpty(calculateNameWorker.current)) {
-    calculateNameWorker.current = new Worker("/calculateNameWorker.js");
+  if (isEmpty(calculateNameWorker.current) && !isUndefined(Worker)) {
+    try {
+      const workerPath = `${valueOrDefault(
+        (
+          window as unknown as {
+            uploadJdk: { publicPath: string };
+          }
+        )?.uploadJdk?.publicPath,
+        "",
+      )}/calculateNameWorker.js`;
+      console.log(workerPath)
+      calculateNameWorker.current = new Worker(workerPath);
+    } catch (e) {
+      Logger.warning("不兼容web worker, 通过 MessageChannel 做兼容处理");
+    }
   }
 })();
