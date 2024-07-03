@@ -72,11 +72,24 @@ import {
   PauseOutlined
 } from "@ant-design/icons-vue";
 import {useBigFileUpload} from "@/hooks";
+import {
+  listFilesReq,
+  mergeUploadReq,
+  sectionUploadReq,
+  verifyFileExistReq
+} from "@/api/upload";
 
 
 const [allProgress, cancelProgressHandler, pauseProgressHandler] = useBigFileUpload();
 
-uploadHandler.config({persist: true});
+uploadHandler.config({
+  persist: true, req: {
+    listFilesReq: listFilesReq,
+    sectionUploadReq: sectionUploadReq,
+    mergeUploadReq: mergeUploadReq,
+    verifyFileExistReq: verifyFileExistReq,
+  }
+});
 
 async function beforeUploadHandler(file: File) {
   // 表示 不同的 code
